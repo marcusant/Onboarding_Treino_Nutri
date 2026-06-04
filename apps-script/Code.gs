@@ -38,9 +38,23 @@ var COLUMNS = [
   'acompanhamento', 'observacoes', 'consentimento'
 ];
 
-/** Teste rápido no browser: abrir a URL /exec deve mostrar este JSON. */
+/** Teste/diagnóstico: abrir a URL /exec mostra para onde o script grava. */
 function doGet() {
-  return jsonOut_({ ok: true, message: 'Anamnese API ativa.' });
+  try {
+    var sheet = getOrCreateSheet_();
+    var ss = sheet.getParent();
+    return jsonOut_({
+      ok: true,
+      message: 'Anamnese API ativa.',
+      planilha: ss.getName(),
+      planilha_url: ss.getUrl(),
+      aba: sheet.getName(),
+      total_linhas: sheet.getLastRow(),       // 1 = só cabeçalho; >1 = já tem leads
+      leads_gravados: Math.max(0, sheet.getLastRow() - 1)
+    });
+  } catch (err) {
+    return jsonOut_({ ok: false, error: String(err) });
+  }
 }
 
 /** Recebe o POST do formulário e grava uma linha na planilha. */
@@ -63,12 +77,18 @@ function doPost(e) {
     });
 
     sheet.appendRow(row);
+    var ss = sheet.getParent();
 
     if (CONFIG.NOTIFY_ON_NEW_LEAD && CONFIG.NOTIFY_EMAIL) {
       sendNotification_(data, whatsappLink);
     }
 
-    return jsonOut_({ ok: true });
+    return jsonOut_({
+      ok: true,
+      linha: sheet.getLastRow(),
+      planilha: ss.getName(),
+      planilha_url: ss.getUrl()
+    });
   } catch (err) {
     return jsonOut_({ ok: false, error: String(err) });
   } finally {
