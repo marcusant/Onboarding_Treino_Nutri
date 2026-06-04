@@ -1,25 +1,15 @@
 "use server"
 
 import { anamneseSchema } from "@/lib/schema"
+import { APPS_SCRIPT_URL } from "@/lib/config"
 
 export async function submitLead(data: unknown) {
   try {
     // Validação com Zod no servidor para garantir segurança.
     const validatedData = anamneseSchema.parse(data);
 
-    const url = process.env.APPS_SCRIPT_URL;
-
-    // Sem URL configurada → modo desenvolvimento: apenas regista no servidor.
-    if (!url) {
-      console.warn(
-        "[submitLead] APPS_SCRIPT_URL não definido — o lead NÃO foi enviado para a planilha.",
-        validatedData
-      );
-      return { success: true };
-    }
-
-    // POST servidor→servidor: não há CORS, e a URL fica fora do browser.
-    const response = await fetch(url, {
+    // POST servidor→servidor: não há CORS, e a URL é pública (endpoint do Apps Script).
+    const response = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify(validatedData),
