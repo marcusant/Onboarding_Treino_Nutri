@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { anamneseSchema, type AnamneseFormValues } from '@/lib/schema';
 import { submitLead } from '@/app/actions/submitLead';
@@ -12,9 +12,6 @@ import { Slider } from '@/components/ui/Slider';
 import { Chips } from '@/components/ui/Chips';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Select } from '@/components/ui/Select';
-import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/utils';
-import { COUNTRY_CODES } from '@/constants/countries';
 import { COUNTRIES, NATIONALITIES } from '@/constants/forms';
 
 const OBJECTIVE_OPTIONS = [
@@ -116,7 +113,7 @@ export function Wizard() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const { control, handleSubmit, trigger, formState: { errors }, watch, getValues, setValue } = useForm<AnamneseFormValues>({
-    resolver: zodResolver(anamneseSchema),
+    resolver: zodResolver(anamneseSchema) as Resolver<AnamneseFormValues>,
     defaultValues: {
       codigo_pais: "+351"
     }
@@ -335,10 +332,10 @@ export function Wizard() {
           {currentStep === 3 && (
             <div className="space-y-4">
               <Controller name="lesoes_anteriores" control={control} render={({ field }) => (
-                <Field label="Lesões (atuais ou passadas)" required error={errors.lesoes_anteriores?.message}><Chips options={['Ombro', 'Joelho', 'Lombar', 'Cervical', 'Tornozelo', 'Punho', 'Quadril', 'Cotovelo', 'Nenhuma']} value={field.value || []} onChange={field.onChange} variant="red" /></Field>
+                <Field label="Lesões (atuais ou passadas)" required error={errors.lesoes_anteriores?.message}><Chips options={['Ombro', 'Joelho', 'Lombar', 'Cervical', 'Tornozelo', 'Punho', 'Quadril', 'Cotovelo', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="red" /></Field>
               )} />
               <Controller name="condicoes_medicas" control={control} render={({ field }) => (
-                <Field label="Tens alguma condição médica?" error={errors.condicoes_medicas?.message}><Chips options={['Hipertensão', 'Diabetes', 'Cardíaca', 'Hérnia', 'Respiratória', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} variant="orange" /></Field>
+                <Field label="Tens alguma condição médica?" error={errors.condicoes_medicas?.message}><Chips options={['Hipertensão', 'Diabetes', 'Cardíaca', 'Hérnia', 'Respiratória', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="orange" /></Field>
               )} />
               <Controller name="liberacao_medica" control={control} render={({ field }) => (
                 <Field label="Tens liberação médica para atividade física?" error={errors.liberacao_medica?.message}><RadioGroup options={['Sim', 'Não', 'Não preciso']} value={field.value || ""} onChange={field.onChange} /></Field>

@@ -35,7 +35,7 @@ export function CheckboxGroup({ options, value = [], onChange, className, maxSel
           const optValue = isObj ? (opt as CheckboxOption).value : (opt as string);
           const optLabel = isObj ? (opt as CheckboxOption).label : (opt as string);
           const isSelected = value.includes(optValue);
-          const isDisabled = !isSelected && maxSelections && value.length >= maxSelections;
+          const isDisabled = Boolean(!isSelected && maxSelections && value.length >= maxSelections);
 
           return (
             <button

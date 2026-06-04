@@ -54,7 +54,7 @@ export const anamneseSchema = z.object({
   acompanhamento: z.enum(["Acompanhamento próximo", "Só o plano"]),
   observacoes: z.string().optional().nullable(),
   consentimento: z.literal(true, {
-    errorMap: () => ({ message: "Obrigatório aceitar para continuar" }),
+    message: "Obrigatório aceitar para continuar",
   }),
 });
 
