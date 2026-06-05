@@ -70,7 +70,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             type={type}
             className={cn(
-              "w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground transition-[border-color,box-shadow] duration-200 outline-none placeholder:text-muted-foreground focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]",
+              "w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.65rem] text-[1rem] text-foreground transition-[border-color,box-shadow] duration-200 outline-none placeholder:text-muted-foreground focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]",
               error && "border-destructive",
               isNumber && "pr-12",
               className

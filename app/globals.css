@@ -71,6 +71,9 @@
   html {
     scroll-behavior: smooth;
     color-scheme: dark;
+    /* Nenhuma coluna do layout justifica rolagem horizontal — evita que
+       qualquer elemento force o scroll lateral em telemóveis. */
+    overflow-x: hidden;
   }
   /* Esconde os spinners nativos — usamos um stepper customizado */
   input[type="number"]::-webkit-outer-spin-button,
@@ -82,6 +85,34 @@
     -moz-appearance: textfield;
     appearance: textfield;
   }
+  /*
+   * Corrige o overflow dos inputs de data/hora no iOS Safari.
+   * Esses inputs têm uma largura mínima intrínseca e ignoram `width: 100%`,
+   * vazando para fora da borda da tela em telemóveis. Remover a aparência
+   * nativa e zerar a largura mínima faz com que respeitem o container.
+   */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="month"],
+  input[type="week"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+  /* Alinha o valor à esquerda e remove a margem extra do iOS. */
+  input::-webkit-date-and-time-value {
+    text-align: left;
+    margin: 0;
+    min-width: 0;
+  }
+  /* O ícone do calendário não deve empurrar o layout. */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    margin-left: auto;
+    cursor: pointer;
+    filter: invert(0.6);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -89,6 +120,7 @@
     -webkit-font-smoothing: antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     min-height: 100dvh;
+    overflow-x: hidden;
     /* Halo violeta TRINUS (idêntico ao original) */
     background-image:
       radial-gradient(48rem 34rem at 50% -8%, rgba(113, 95, 219, 0.22), transparent 62%),

@@ -8,11 +8,15 @@ import { submitLead } from '@/app/actions/submitLead';
 import { Input } from '@/components/ui/Input';
 import { RadioGroup } from '@/components/ui/RadioGroup';
 import { CheckboxGroup } from '@/components/ui/CheckboxGroup';
-import { Slider } from '@/components/ui/Slider';
+import { Slider, getSliderEmoji } from '@/components/ui/Slider';
 import { Chips } from '@/components/ui/Chips';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Select } from '@/components/ui/Select';
 import { COUNTRIES, NATIONALITIES } from '@/constants/forms';
+
+// Escalas de emoji dos sliders (índice 0 = valor mais baixo … 4 = mais alto).
+const SONO_EMOJIS = ['😫', '😕', '😐', '🙂', '😄'];   // mais = melhor
+const STRESS_EMOJIS = ['😌', '🙂', '😐', '😟', '😰']; // mais = pior
 
 const OBJECTIVE_OPTIONS = [
   {
@@ -187,7 +191,7 @@ export function Wizard() {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           {currentStep === 0 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <Controller name="nome_completo" control={control} render={({ field }) => (
                 <Field label="Nome completo" required error={errors.nome_completo?.message}><Input placeholder="O teu nome" {...field} value={field.value || ""} error={errors.nome_completo?.message} /></Field>
               )} />
@@ -265,7 +269,7 @@ export function Wizard() {
           )}
 
           {currentStep === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <Controller name="objetivo" control={control} render={({ field }) => (
                 <Field label="Qual o teu principal objetivo?" required error={errors.objetivo?.message}>
                   <RadioGroup 
@@ -316,7 +320,7 @@ export function Wizard() {
           )}
 
           {currentStep === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <Controller name="altura_cm" control={control} render={({ field }) => (
                 <Field label="Altura (cm)" required error={errors.altura_cm?.message}><Input type="number" placeholder="Ex: 175" {...field} value={field.value || ""} error={errors.altura_cm?.message} onChange={e => field.onChange(Number(e.target.value) || "")} /></Field>
               )} />
@@ -330,7 +334,7 @@ export function Wizard() {
           )}
 
           {currentStep === 3 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <Controller name="lesoes_anteriores" control={control} render={({ field }) => (
                 <Field label="Lesões (atuais ou passadas)" required error={errors.lesoes_anteriores?.message}><Chips options={['Ombro', 'Joelho', 'Lombar', 'Cervical', 'Tornozelo', 'Punho', 'Quadril', 'Cotovelo', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="red" /></Field>
               )} />
@@ -352,7 +356,7 @@ export function Wizard() {
           )}
 
           {currentStep === 4 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <Controller name="nivel" control={control} render={({ field }) => (
                 <Field label="Como avalias o teu nível?" error={errors.nivel?.message}><RadioGroup options={['Iniciante', 'Intermediário', 'Avançado']} value={field.value || ""} onChange={field.onChange} /></Field>
               )} />
@@ -399,12 +403,12 @@ export function Wizard() {
           )}
 
           {currentStep === 5 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <Controller name="qualidade_sono" control={control} render={({ field }) => (
-                <Field label="Qualidade do teu sono" error={errors.qualidade_sono?.message}><Slider min={1} max={10} value={field.value} onChange={field.onChange} labels={['Muito ruim', 'Excelente']} /></Field>
+                <Field label={<span className="inline-flex items-center gap-2">Qualidade do teu sono <span className="text-xl leading-none select-none" aria-hidden="true">{getSliderEmoji(field.value, SONO_EMOJIS)}</span></span>} error={errors.qualidade_sono?.message}><Slider min={1} max={10} value={field.value} onChange={field.onChange} labels={['Muito ruim', 'Excelente']} emojis={SONO_EMOJIS} /></Field>
               )} />
               <Controller name="nivel_stress" control={control} render={({ field }) => (
-                <Field label="Nível de stress no dia a dia" error={errors.nivel_stress?.message}><Slider min={1} max={10} value={field.value} onChange={field.onChange} labels={['Baixo', 'Alto']} /></Field>
+                <Field label={<span className="inline-flex items-center gap-2">Nível de stress no dia a dia <span className="text-xl leading-none select-none" aria-hidden="true">{getSliderEmoji(field.value, STRESS_EMOJIS)}</span></span>} error={errors.nivel_stress?.message}><Slider min={1} max={10} value={field.value} onChange={field.onChange} labels={['Baixo', 'Alto']} emojis={STRESS_EMOJIS} /></Field>
               )} />
               <Controller name="alcool" control={control} render={({ field }) => (
                 <Field label="Consomes álcool?" error={errors.alcool?.message}><RadioGroup options={['Não', 'Socialmente', 'Frequentemente']} value={field.value || ""} onChange={field.onChange} /></Field>
@@ -413,7 +417,7 @@ export function Wizard() {
                 <Field label="Fumas?" error={errors.fuma?.message}><RadioGroup options={['Não', 'Às vezes', 'Sim, diariamente']} value={field.value || ""} onChange={field.onChange} /></Field>
               )} />
               <Controller name="prioridade" control={control} render={({ field }) => (
-                <Field label="Quanto este objetivo é prioridade hoje?" required error={errors.prioridade?.message}><Slider min={1} max={10} value={field.value} onChange={field.onChange} labels={['Pouco', 'Muito']} /></Field>
+                <Field label={<span className="inline-flex items-center gap-2">Quanto este objetivo é prioridade hoje? <span className="text-xl leading-none select-none" aria-hidden="true">🎯</span></span>} required error={errors.prioridade?.message}><Slider min={1} max={10} value={field.value} onChange={field.onChange} labels={['Pouco', 'Muito']} filled /></Field>
               )} />
               <Controller name="acompanhamento" control={control} render={({ field }) => (
                 <Field label="Preferes acompanhamento próximo ou só o plano para executar sozinho?" required error={errors.acompanhamento?.message}><RadioGroup options={['Acompanhamento próximo', 'Só o plano']} value={field.value || ""} onChange={field.onChange} error={errors.acompanhamento?.message} /></Field>
@@ -470,10 +474,10 @@ export function Wizard() {
   );
 }
 
-function Field({ label, description, error, required, children }: { label: string, description?: string, error?: string, required?: boolean, children: React.ReactNode }) {
+function Field({ label, description, error, required, children }: { label: React.ReactNode, description?: string, error?: string, required?: boolean, children: React.ReactNode }) {
   return (
     <div className="space-y-1.5 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <label className="block text-[1.05rem] font-medium text-foreground mb-3">
+      <label className="block text-[1.05rem] font-medium text-foreground mb-1.5">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {description && <p className="text-[0.85rem] text-muted-foreground mb-3 mt-[-0.5rem]">{description}</p>}
