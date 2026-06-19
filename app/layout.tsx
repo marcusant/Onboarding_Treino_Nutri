@@ -2,9 +2,24 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://onboarding-trinus.vercel.app"),
   title: "TRINUS - Onboarding",
   description:
     "Preenche a tua ficha de anamnese para começares a tua transformação com treino personalizado.",
+  openGraph: {
+    title: "TRINUS - Onboarding",
+    description:
+      "Preenche a tua ficha de anamnese para começares a tua transformação com treino personalizado.",
+    url: "https://onboarding-trinus.vercel.app/",
+    siteName: "TRINUS",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TRINUS - Onboarding",
+    description:
+      "Preenche a tua ficha de anamnese para começares a tua transformação com treino personalizado.",
+  },
 };
 
 export const viewport: Viewport = {
