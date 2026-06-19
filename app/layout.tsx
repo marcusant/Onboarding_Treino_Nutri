@@ -2,12 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TRINUS — Ficha de Anamnese",
+  title: "TRINUS - Onboarding",
   description:
     "Preenche a tua ficha de anamnese para começares a tua transformação com treino personalizado.",
-  icons: {
-    icon: "/logo.png",
-  },
 };
 
 export const viewport: Viewport = {
