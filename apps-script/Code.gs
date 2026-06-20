@@ -136,12 +136,23 @@ function buildWhatsAppLink_(codigoPais, whatsapp) {
 function sendNotification_(data, whatsappLink) {
   var subject = '🔥 Novo lead TRINUS: ' + (data.nome_completo || 'Sem nome');
   var body = [
+    '— CONTATO —',
     'Nome: ' + (data.nome_completo || ''),
     'E-mail: ' + (data.email || ''),
     'WhatsApp: ' + (data.codigo_pais || '') + ' ' + (data.whatsapp || ''),
-    'Objetivo: ' + (data.objetivo || ''),
-    'Onde treina: ' + (data.local_treino || ''),
-    'Frequência: ' + (data.frequencia_semanal || '') + ' dias/semana',
+    'Profissão: ' + formatValue_(data.profissao),
+    '',
+    '— OBJETIVO —',
+    'Objetivo: ' + formatValue_(data.objetivo),
+    '',
+    '— SAÚDE —',
+    'Lesões: ' + formatValue_(data.lesoes_anteriores),
+    'Condições médicas: ' + formatValue_(data.condicoes_medicas),
+    'Liberação médica: ' + formatValue_(data.liberacao_medica),
+    '',
+    '— TREINO —',
+    'Onde treina: ' + formatValue_(data.local_treino),
+    'Frequência: ' + formatValue_(data.frequencia_semanal) + ' dias/semana',
     '',
     '➡️ Abrir conversa no WhatsApp: ' + whatsappLink
   ].join('\n');

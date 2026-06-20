@@ -29,8 +29,8 @@ export const anamneseSchema = z.object({
 
   // Passo 4: Saúde
   lesoes_anteriores: z.array(z.string()).min(1, "Seleciona pelo menos uma opção"),
-  condicoes_medicas: z.array(z.string()).optional().default([]),
-  liberacao_medica: z.enum(["Sim", "Não", "Não preciso"]).optional().nullable(),
+  condicoes_medicas: z.array(z.string()).min(1, "Seleciona pelo menos uma opção"),
+  liberacao_medica: z.enum(["Sim", "Não", "Não preciso"], { message: "Seleciona uma opção" }),
   dor_movimento: z.string().optional().nullable(),
   gestante: z.enum(["Sim", "Não", "Não se aplica"]).optional().nullable(),
 

@@ -113,8 +113,14 @@ const STEPS = [
 
 export function Wizard() {
   const [currentStep, setCurrentStep] = useState(0);
+  const [maxStepReached, setMaxStepReached] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  // Texto livre quando "Outra" é selecionada nas lesões / condições médicas.
+  const [lesaoOutra, setLesaoOutra] = useState("");
+  const [condicaoOutra, setCondicaoOutra] = useState("");
+  const [treinoOutro, setTreinoOutro] = useState("");
+  const [outraErrors, setOutraErrors] = useState<{ lesao?: string; condicao?: string }>({});
 
   const { control, handleSubmit, trigger, formState: { errors }, watch, getValues, setValue } = useForm<AnamneseFormValues>({
     resolver: zodResolver(anamneseSchema) as Resolver<AnamneseFormValues>,
@@ -130,17 +136,50 @@ export function Wizard() {
   const handleNext = async () => {
     const fieldsToValidate = step.fields as any;
     const isValid = await trigger(fieldsToValidate);
-    if (isValid) {
-      setCurrentStep(prev => prev + 1);
+
+    // No passo Saúde, exige o detalhe quando "Outra" está selecionada.
+    let outraValid = true;
+    if (step.id === 'saude') {
+      const vals = getValues();
+      const errs: { lesao?: string; condicao?: string } = {};
+      if ((vals.lesoes_anteriores || []).includes('Outra') && !lesaoOutra.trim()) {
+        errs.lesao = 'Descreve a outra lesão';
+      }
+      if ((vals.condicoes_medicas || []).includes('Outra') && !condicaoOutra.trim()) {
+        errs.condicao = 'Descreve a outra condição';
+      }
+      setOutraErrors(errs);
+      outraValid = !errs.lesao && !errs.condicao;
+    }
+
+    if (isValid && outraValid) {
+      const next = currentStep + 1;
+      setMaxStepReached(prev => Math.max(prev, next));
+      setCurrentStep(next);
     }
   };
 
   const handlePrev = () => setCurrentStep(prev => prev - 1);
 
+  // Substitui a opção "Outra"/"Outros" pelo texto livre informado
+  // (ex: "Outra: tendinite"), mantendo tudo no mesmo campo/coluna da planilha.
+  const applyOutra = (arr: string[] | null | undefined, text: string, token = "Outra"): string[] => {
+    const list = arr || [];
+    const detail = text.trim();
+    if (!detail || !list.includes(token)) return list;
+    return list.map((v) => (v === token ? `${token}: ${detail}` : v));
+  };
+
   const onSubmit = async (data: AnamneseFormValues) => {
     setIsSubmitting(true);
     try {
-      const result = await submitLead(data);
+      const payload: AnamneseFormValues = {
+        ...data,
+        lesoes_anteriores: applyOutra(data.lesoes_anteriores, lesaoOutra),
+        condicoes_medicas: applyOutra(data.condicoes_medicas, condicaoOutra),
+        tipos_treino: applyOutra(data.tipos_treino, treinoOutro, "Outros"),
+      };
+      const result = await submitLead(payload);
       if (!result?.success) {
         throw new Error(result?.error || "Falha na submissão");
       }
@@ -170,12 +209,34 @@ export function Wizard() {
   return (
     <div className="w-full">
       <div className="mb-6">
-        <div className="flex justify-between text-[0.72rem] uppercase tracking-[0.12em] text-muted-foreground font-semibold mb-2">
-          <span>Passo <strong className="text-primary">{currentStep + 1} de {STEPS.length}</strong></span>
-          <span>{step.title.toUpperCase()}</span>
+        <div className="flex items-center gap-3 mb-2.5">
+          {currentStep > 0 && (
+            <button
+              type="button"
+              onClick={handlePrev}
+              aria-label="Voltar ao passo anterior"
+              className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full border border-border bg-transparent text-muted-foreground transition-all duration-200 cursor-pointer hover:text-foreground hover:border-primary"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>
+            </button>
+          )}
+          <div className="flex-1 min-w-0 flex justify-between items-center text-[0.72rem] uppercase tracking-[0.12em] text-muted-foreground font-semibold">
+            <span>Passo <strong className="text-primary">{currentStep + 1} de {STEPS.length}</strong></span>
+            <span className="truncate ml-2">{step.title.toUpperCase()}</span>
+          </div>
+          {currentStep < maxStepReached && (
+            <button
+              type="button"
+              onClick={handleNext}
+              aria-label="Avançar para o próximo passo"
+              className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full border border-border bg-transparent text-muted-foreground transition-all duration-200 cursor-pointer hover:text-foreground hover:border-primary"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </button>
+          )}
         </div>
         <div className="h-1.5 bg-input rounded-full overflow-hidden">
-          <div 
+          <div
             className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-[width] duration-[0.45s] ease-[cubic-bezier(0.16,1,0.3,1)]"
             style={{ width: `${progress}%` }}
           />
@@ -263,7 +324,7 @@ export function Wizard() {
                 <Field label="Cidade de residência"><Input placeholder="Ex: Lisboa" {...field} value={field.value || ""} /></Field>
               )} />
               <Controller name="profissao" control={control} render={({ field }) => (
-                <Field label="Profissão e rotina de trabalho"><Input placeholder="Ex: Designer, sentado a maior parte do dia" {...field} value={field.value || ""} /></Field>
+                <Field label="Profissão e rotina de trabalho"><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Ex: Designer — passo a maior parte do dia sentado ao computador. Conta também se ficas em pé, caminhas muito ou fazes esforço físico no trabalho." {...field} value={field.value || ""} /></Field>
               )} />
             </div>
           )}
@@ -336,13 +397,29 @@ export function Wizard() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <Controller name="lesoes_anteriores" control={control} render={({ field }) => (
-                <Field label="Lesões (atuais ou passadas)" required error={errors.lesoes_anteriores?.message}><Chips options={['Ombro', 'Joelho', 'Lombar', 'Cervical', 'Tornozelo', 'Punho', 'Quadril', 'Cotovelo', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="red" /></Field>
+                <Field label="Lesões (atuais ou passadas)" required error={errors.lesoes_anteriores?.message}>
+                  <Chips options={['Ombro', 'Joelho', 'Lombar', 'Cervical', 'Tornozelo', 'Punho', 'Quadril', 'Cotovelo', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="red" />
+                  {(field.value || []).includes('Outra') && (
+                    <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <Input placeholder="Qual lesão? Descreve aqui" value={lesaoOutra} onChange={e => { setLesaoOutra(e.target.value); if (outraErrors.lesao) setOutraErrors(prev => ({ ...prev, lesao: undefined })); }} error={outraErrors.lesao} />
+                      {outraErrors.lesao && <p className="text-[0.85rem] text-red-500 mt-1">{outraErrors.lesao}</p>}
+                    </div>
+                  )}
+                </Field>
               )} />
               <Controller name="condicoes_medicas" control={control} render={({ field }) => (
-                <Field label="Tens alguma condição médica?" error={errors.condicoes_medicas?.message}><Chips options={['Hipertensão', 'Diabetes', 'Cardíaca', 'Hérnia', 'Respiratória', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="orange" /></Field>
+                <Field label="Tens alguma condição médica?" required error={errors.condicoes_medicas?.message}>
+                  <Chips options={['Hipertensão', 'Diabetes', 'Cardíaca', 'Hérnia', 'Respiratória', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="orange" />
+                  {(field.value || []).includes('Outra') && (
+                    <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <Input placeholder="Qual condição? Descreve aqui" value={condicaoOutra} onChange={e => { setCondicaoOutra(e.target.value); if (outraErrors.condicao) setOutraErrors(prev => ({ ...prev, condicao: undefined })); }} error={outraErrors.condicao} />
+                      {outraErrors.condicao && <p className="text-[0.85rem] text-red-500 mt-1">{outraErrors.condicao}</p>}
+                    </div>
+                  )}
+                </Field>
               )} />
               <Controller name="liberacao_medica" control={control} render={({ field }) => (
-                <Field label="Tens liberação médica para atividade física?" error={errors.liberacao_medica?.message}><RadioGroup options={['Sim', 'Não', 'Não preciso']} value={field.value || ""} onChange={field.onChange} /></Field>
+                <Field label="Tens liberação médica para atividade física?" required error={errors.liberacao_medica?.message}><RadioGroup options={['Sim', 'Não', 'Não preciso']} value={field.value || ""} onChange={field.onChange} /></Field>
               )} />
               <Controller name="dor_movimento" control={control} render={({ field }) => (
                 <Field label="Sentes dor em algum movimento específico?"><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Opcional — ex: dor no joelho ao agachar" {...field} value={field.value || ""} /></Field>
@@ -382,7 +459,14 @@ export function Wizard() {
                 </div>
               )}
               <Controller name="tipos_treino" control={control} render={({ field }) => (
-                <Field label="Que tipos de treino já praticaste?" error={errors.tipos_treino?.message}><Chips options={['Musculação', 'Funcional', 'Corrida', 'Crossfit', 'Outros', 'Nenhum']} value={field.value || []} onChange={field.onChange} /></Field>
+                <Field label="Que tipos de treino já praticaste?" error={errors.tipos_treino?.message}>
+                  <Chips options={['Musculação', 'Funcional', 'Corrida', 'Crossfit', 'Outros', 'Nenhum']} value={field.value || []} onChange={field.onChange} />
+                  {(field.value || []).includes('Outros') && (
+                    <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <Input placeholder="Qual tipo de treino? Descreve aqui" value={treinoOutro} onChange={e => setTreinoOutro(e.target.value)} />
+                    </div>
+                  )}
+                </Field>
               )} />
               <Controller name="local_treino" control={control} render={({ field }) => (
                 <Field label="Onde vais treinar?" required error={errors.local_treino?.message}><RadioGroup options={['Ginásio', 'Casa', 'Ar livre', 'Misto: Ginásio e ar livre', 'Misto: Casa e ar livre', 'Misto: Ginásio e casa']} value={field.value || ""} onChange={field.onChange} error={errors.local_treino?.message} /></Field>
