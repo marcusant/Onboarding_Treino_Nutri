@@ -62,6 +62,37 @@ function doGet() {
   }
 }
 
+/**
+ * Envia um e-mail de EXEMPLO para CONFIG.NOTIFY_EMAIL, com dados fictícios,
+ * para conferires o formato do resumo que recebes a cada novo lead.
+ * Como usar: no editor do Apps Script, seleciona esta função no menu de
+ * funções (em cima) e clica em "Executar". Autoriza as permissões se pedir.
+ * Não grava nada na planilha — só dispara o e-mail.
+ */
+function enviarEmailDeExemplo() {
+  var exemplo = {
+    nome_completo: 'Marcus Vinicius Barreto Carneiro dos Santos',
+    email: 'marcus.v.barreto@gmail.com',
+    codigo_pais: '+351',
+    whatsapp: '968685491',
+    profissao: 'Designer — sentado a maior parte do dia ao computador',
+    objetivo: 'Perder peso',
+    prazo: '3 meses',
+    local_treino: 'Misto: Ginásio e ar livre',
+    frequencia_semanal: '4',
+    tempo_sessao: '45 min',
+    horario_treino: 'Manhã',
+    lesoes_anteriores: ['Joelho', 'Outra: tendinite no cotovelo'],
+    condicoes_medicas: ['Nenhuma'],
+    liberacao_medica: 'Não preciso',
+    dor_movimento: 'Dor no joelho ao agachar',
+    gestante: 'Não se aplica'
+  };
+  var link = buildWhatsAppLink_(exemplo.codigo_pais, exemplo.whatsapp);
+  sendNotification_(exemplo, link);
+  return 'E-mail de exemplo enviado para ' + CONFIG.NOTIFY_EMAIL;
+}
+
 /** Recebe o POST do formulário e grava uma linha na planilha. */
 function doPost(e) {
   var lock = LockService.getScriptLock();
