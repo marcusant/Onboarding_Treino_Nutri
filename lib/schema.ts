@@ -38,6 +38,8 @@ export const anamneseSchema = z.object({
   motivacao_principal: z.string().min(5, "Por favor, detalha a tua motivação"),
   prazo: z.enum(["1 mês", "3 meses", "6 meses", "Sem pressa"]).optional().nullable(),
   tentou_antes: z.string().optional().nullable(),
+  // Meta concreta — obrigatória em todas as trilhas (treino e nutrição).
+  resultado_90_dias: z.string().min(3, "Indica o resultado que queres em 90 dias"),
 
   // Passo 3: Medidas
   altura_cm: z.coerce.number().min(100, "Altura inválida").max(250, "Altura inválida"),
@@ -45,6 +47,10 @@ export const anamneseSchema = z.object({
   percentual_gordura: z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? undefined : val),
     z.coerce.number().min(1, "Valor inválido").max(70, "Valor inválido").optional()
+  ),
+  circunferencia_cintura: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? undefined : val),
+    z.coerce.number().min(40, "Valor inválido").max(200, "Valor inválido").optional()
   ),
 
   // Passo 4: Saúde
@@ -67,7 +73,9 @@ export const anamneseSchema = z.object({
   horario_treino: z.enum(["Manhã", "Tarde", "Noite", "Varia"]).optional().nullable(),
   equipamentos: z.string().optional().nullable(),
 
-  // Passo 6: Saúde nutricional (só nas trilhas com nutrição — campos sensíveis = opcionais)
+  // Passo 6: Saúde nutricional (só nas trilhas com nutrição)
+  // alergias_alimentares é segurança clínica → obrigatório (≥1) no superRefine.
+  alergias_alimentares: z.array(z.string()).optional().default([]),
   medicamentos: z.string().optional().nullable(),
   cirurgia_relevante: z.string().optional().nullable(),
   exames_recentes: z.array(z.string()).optional().default([]),
@@ -82,7 +90,11 @@ export const anamneseSchema = z.object({
   alimentos_evita: z.string().optional().nullable(),
   restricoes_alimentares: z.array(z.string()).optional().default([]),
   maior_dificuldade: z.array(z.string()).optional().default([]),
-  resultado_90_dias: z.string().optional().nullable(),
+  // Logística alimentar (opcional, mas decisiva para a adesão do plano).
+  // cozinha_propria é multi-seleção (pode cozinhar E comprar pronto, etc.).
+  cozinha_propria: z.array(z.string()).optional().default([]),
+  frequencia_come_fora: z.enum(["Raramente", "1-2x/semana", "3-5x/semana", "Todos os dias"]).optional().nullable(),
+  suplementos_atuais: z.array(z.string()).optional().default([]),
 
   // Passo final: Estilo de vida / Compromisso
   qualidade_sono: z.number().min(1).max(10).default(6),
@@ -132,8 +144,8 @@ export const anamneseSchema = z.object({
     if (!(data.maior_dificuldade && data.maior_dificuldade.length > 0)) {
       ctx.addIssue({ code: "custom", path: ["maior_dificuldade"], message: "Seleciona pelo menos uma opção" });
     }
-    if (!data.resultado_90_dias || data.resultado_90_dias.trim().length < 3) {
-      ctx.addIssue({ code: "custom", path: ["resultado_90_dias"], message: "Indica o resultado que queres em 90 dias" });
+    if (!(data.alergias_alimentares && data.alergias_alimentares.length > 0)) {
+      ctx.addIssue({ code: "custom", path: ["alergias_alimentares"], message: "Seleciona pelo menos uma opção (ou 'Nenhuma')" });
     }
   }
 });

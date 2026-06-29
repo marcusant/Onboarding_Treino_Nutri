@@ -74,7 +74,8 @@ var SECTIONS = [
       ['objetivos_secundarios', 'Objetivos secundários'],
       ['motivacao_principal', 'Motivação'],
       ['prazo', 'Prazo desejado'],
-      ['tentou_antes', 'Já tentou antes']
+      ['tentou_antes', 'Já tentou antes'],
+      ['resultado_90_dias', 'Resultado em 90 dias']
     ]
   },
   {
@@ -82,7 +83,8 @@ var SECTIONS = [
     fields: [
       ['altura_cm', 'Altura (cm)'],
       ['peso_avaliacao', 'Peso (kg)'],
-      ['percentual_gordura', '% de gordura']
+      ['percentual_gordura', '% de gordura'],
+      ['circunferencia_cintura', 'Cintura (cm)']
     ]
   },
   {
@@ -112,6 +114,7 @@ var SECTIONS = [
   {
     title: 'Saúde nutricional', color: '#ead1dc',
     fields: [
+      ['alergias_alimentares', 'Alergias alimentares'],
       ['medicamentos', 'Medicamentos'],
       ['cirurgia_relevante', 'Cirurgia relevante'],
       ['exames_recentes', 'Exames recentes'],
@@ -129,7 +132,9 @@ var SECTIONS = [
       ['alimentos_evita', 'Alimentos que evita'],
       ['restricoes_alimentares', 'Restrições alimentares'],
       ['maior_dificuldade', 'Maior dificuldade'],
-      ['resultado_90_dias', 'Resultado em 90 dias']
+      ['cozinha_propria', 'Quem cozinha'],
+      ['frequencia_come_fora', 'Come fora (freq.)'],
+      ['suplementos_atuais', 'Suplementos atuais']
     ]
   },
   {
@@ -212,13 +217,18 @@ function enviarEmailDeExemplo() {
     dor_movimento: 'Dor no joelho ao agachar',
     gestante: 'Não se aplica',
     // Nutrição
+    circunferencia_cintura: 88,
+    resultado_90_dias: 'Perder 5kg e melhorar a digestão',
+    alergias_alimentares: ['Frutos do mar', 'Outra: amendoim'],
     alimentacao_dia_normal: 'Café com pão de manhã, arroz/frango/salada ao almoço, jantar leve',
     refeicoes_por_dia: '4',
     horarios_fome: ['Tarde', 'Noite'],
     agua_por_dia: '1-2L',
     restricoes_alimentares: ['Sem Lactose'],
     maior_dificuldade: ['Doces', 'Fim de semana'],
-    resultado_90_dias: 'Perder 5kg e melhorar a digestão',
+    cozinha_propria: ['Eu cozinho', 'Compro pronto / delivery'],
+    frequencia_come_fora: '1-2x/semana',
+    suplementos_atuais: ['Whey', 'Creatina', 'Outro: colagénio'],
     medicamentos: 'Nenhum',
     exames_recentes: ['Glicemia', 'Colesterol']
   };
@@ -369,6 +379,7 @@ function sendNotification_(data, whatsappLink) {
   lines.push('OBJETIVO');
   add('Objetivo', data.objetivo);
   add('Prazo desejado', data.prazo);
+  add('Resultado em 90 dias', data.resultado_90_dias);
 
   // TREINO: só aparece quando há dados de treino (trilhas treino/ambos).
   if (has(data.local_treino) || has(data.frequencia_semanal) || has(data.ja_treina)) {
@@ -395,9 +406,10 @@ function sendNotification_(data, whatsappLink) {
   // NUTRIÇÃO: só aparece quando há dados (trilhas nutrição/ambos).
   if (has(data.alimentacao_dia_normal) || has(data.refeicoes_por_dia) ||
       has(data.agua_por_dia) || has(data.restricoes_alimentares) ||
-      has(data.maior_dificuldade) || has(data.resultado_90_dias)) {
+      has(data.maior_dificuldade) || has(data.alergias_alimentares)) {
     lines.push('');
     lines.push('NUTRIÇÃO');
+    add('⚠️ ALERGIAS', data.alergias_alimentares);
     add('Alimentação num dia normal', data.alimentacao_dia_normal);
     add('Refeições por dia', data.refeicoes_por_dia);
     add('Fome (horários)', data.horarios_fome);
@@ -406,7 +418,9 @@ function sendNotification_(data, whatsappLink) {
     add('Evita / não tolera', data.alimentos_evita);
     add('Restrições', data.restricoes_alimentares);
     add('Maior dificuldade', data.maior_dificuldade);
-    add('Resultado em 90 dias', data.resultado_90_dias);
+    add('Quem cozinha', data.cozinha_propria);
+    add('Come fora (freq.)', data.frequencia_come_fora);
+    add('Suplementos', data.suplementos_atuais);
     add('Medicamentos', data.medicamentos);
     add('Cirurgia relevante', data.cirurgia_relevante);
     add('Exames recentes', data.exames_recentes);

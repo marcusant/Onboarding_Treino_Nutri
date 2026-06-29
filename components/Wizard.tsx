@@ -81,14 +81,14 @@ const STEP_OBJETIVO: StepDef = {
   icon: '🎯',
   title: 'Objetivo',
   subtitle: 'O que te traz aqui? Quero perceber o teu porquê.',
-  fields: ['objetivo', 'motivacao_principal', 'prazo', 'tentou_antes']
+  fields: ['objetivo', 'motivacao_principal', 'prazo', 'tentou_antes', 'resultado_90_dias']
 };
 const STEP_MEDIDAS: StepDef = {
   id: 'medidas',
   icon: '📏',
   title: 'Medidas',
   subtitle: 'Um ponto de partida para acompanhar a tua evolução.',
-  fields: ['altura_cm', 'peso_avaliacao', 'percentual_gordura']
+  fields: ['altura_cm', 'peso_avaliacao', 'percentual_gordura', 'circunferencia_cintura']
 };
 const STEP_SAUDE: StepDef = {
   id: 'saude',
@@ -109,14 +109,14 @@ const STEP_SAUDE_NUTRI: StepDef = {
   icon: '🩹',
   title: 'Saúde nutricional',
   subtitle: 'Para uma estratégia segura, conta-me o teu cenário clínico.',
-  fields: ['medicamentos', 'cirurgia_relevante', 'exames_recentes', 'compulsao_alimentar']
+  fields: ['alergias_alimentares', 'medicamentos', 'cirurgia_relevante', 'exames_recentes', 'compulsao_alimentar']
 };
 const STEP_HABITOS: StepDef = {
   id: 'habitos_alimentares',
   icon: '🥗',
   title: 'Hábitos alimentares',
   subtitle: 'Agora o teu dia a dia à mesa, para montar algo realista.',
-  fields: ['alimentacao_dia_normal', 'refeicoes_por_dia', 'horarios_fome', 'agua_por_dia', 'alimentos_gosta', 'alimentos_evita', 'restricoes_alimentares', 'maior_dificuldade', 'resultado_90_dias']
+  fields: ['alimentacao_dia_normal', 'refeicoes_por_dia', 'horarios_fome', 'agua_por_dia', 'alimentos_gosta', 'alimentos_evita', 'restricoes_alimentares', 'maior_dificuldade', 'cozinha_propria', 'frequencia_come_fora', 'suplementos_atuais']
 };
 const STEP_COMPROMISSO: StepDef = {
   id: 'compromisso',
@@ -167,7 +167,9 @@ export function Wizard() {
   const [treinoOutro, setTreinoOutro] = useState("");
   const [exameOutro, setExameOutro] = useState("");
   const [restricaoOutra, setRestricaoOutra] = useState("");
-  const [outraErrors, setOutraErrors] = useState<{ lesao?: string; condicao?: string; restricao?: string }>({});
+  const [alergiaOutra, setAlergiaOutra] = useState("");
+  const [suplementoOutro, setSuplementoOutro] = useState("");
+  const [outraErrors, setOutraErrors] = useState<{ lesao?: string; condicao?: string; restricao?: string; alergia?: string }>({});
 
   const { control, handleSubmit, trigger, formState: { errors }, watch, getValues, setValue } = useForm<AnamneseFormValues>({
     resolver: zodResolver(anamneseSchema) as Resolver<AnamneseFormValues>,
@@ -224,6 +226,11 @@ export function Wizard() {
       isStepValid = false;
     }
   }
+  if (step?.id === 'saude_nutricional') {
+    if ((watchedValues.alergias_alimentares || []).includes('Outra') && !alergiaOutra.trim()) {
+      isStepValid = false;
+    }
+  }
 
   const handleNext = async () => {
     const fieldsToValidate = step.fields as any;
@@ -231,7 +238,7 @@ export function Wizard() {
 
     // Exige o detalhe quando "Outra" está selecionada nos passos relevantes.
     let outraValid = true;
-    const errs: { lesao?: string; condicao?: string; restricao?: string } = {};
+    const errs: { lesao?: string; condicao?: string; restricao?: string; alergia?: string } = {};
     if (step.id === 'saude') {
       const vals = getValues();
       if ((vals.lesoes_anteriores || []).includes('Outra') && !lesaoOutra.trim()) {
@@ -248,6 +255,13 @@ export function Wizard() {
         errs.restricao = 'Descreve a outra restrição';
       }
       outraValid = !errs.restricao;
+    }
+    if (step.id === 'saude_nutricional') {
+      const vals = getValues();
+      if ((vals.alergias_alimentares || []).includes('Outra') && !alergiaOutra.trim()) {
+        errs.alergia = 'Descreve a outra alergia';
+      }
+      outraValid = !errs.alergia;
     }
     setOutraErrors(errs);
 
@@ -290,6 +304,8 @@ export function Wizard() {
         tipos_treino: applyOutra(data.tipos_treino, treinoOutro, "Outros"),
         exames_recentes: applyOutra(data.exames_recentes, exameOutro, "Outros"),
         restricoes_alimentares: applyOutra(data.restricoes_alimentares, restricaoOutra),
+        alergias_alimentares: applyOutra(data.alergias_alimentares, alergiaOutra),
+        suplementos_atuais: applyOutra(data.suplementos_atuais, suplementoOutro, "Outro"),
       };
       const result = await submitLead(payload);
       if (!result?.success) {
@@ -520,6 +536,9 @@ export function Wizard() {
               <Controller name="tentou_antes" control={control} render={({ field }) => (
                 <Field label="Já tentaste antes? O que funcionou e o que não funcionou?"><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Opcional: conta-me a tua experiência" {...field} value={field.value || ""} /></Field>
               )} />
+              <Controller name="resultado_90_dias" control={control} render={({ field }) => (
+                <Field label="Que resultado concreto queres alcançar em 90 dias?" required error={errors.resultado_90_dias?.message}><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Ex: perder 5kg, fazer a 1ª flexão, ter mais energia, melhorar a digestão..." {...field} value={field.value || ""} /></Field>
+              )} />
             </div>
           )}
 
@@ -533,6 +552,9 @@ export function Wizard() {
               )} />
               <Controller name="percentual_gordura" control={control} render={({ field }) => (
                 <Field label="% de gordura (se souberes)" error={errors.percentual_gordura?.message}><Input type="number" step="0.1" placeholder="Ex: 18" {...field} value={field.value || ""} error={errors.percentual_gordura?.message} onChange={e => field.onChange(Number(e.target.value) || "")} /></Field>
+              )} />
+              <Controller name="circunferencia_cintura" control={control} render={({ field }) => (
+                <Field label="Circunferência da cintura (cm, se souberes)" description="Bom indicador de saúde e de evolução." error={errors.circunferencia_cintura?.message}><Input type="number" step="0.1" placeholder="Ex: 84" {...field} value={field.value || ""} error={errors.circunferencia_cintura?.message} onChange={e => field.onChange(Number(e.target.value) || "")} /></Field>
               )} />
             </div>
           )}
@@ -637,6 +659,17 @@ export function Wizard() {
 
           {step.id === 'saude_nutricional' && (
             <div className="space-y-6">
+              <Controller name="alergias_alimentares" control={control} render={({ field }) => (
+                <Field label="Tens alguma alergia alimentar?" description="Importante para a tua segurança. Marca 'Nenhuma' se não tiveres." required error={errors.alergias_alimentares?.message}>
+                  <Chips options={['Amendoim', 'Frutos do mar', 'Ovo', 'Leite', 'Soja', 'Trigo', 'Nozes', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="red" />
+                  {(field.value || []).includes('Outra') && (
+                    <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <Input placeholder="Qual alergia? Descreve aqui" value={alergiaOutra} onChange={e => { setAlergiaOutra(e.target.value); if (outraErrors.alergia) setOutraErrors(prev => ({ ...prev, alergia: undefined })); }} error={outraErrors.alergia} />
+                      {outraErrors.alergia && <p className="text-[0.85rem] text-red-500 mt-1">{outraErrors.alergia}</p>}
+                    </div>
+                  )}
+                </Field>
+              )} />
               <Controller name="medicamentos" control={control} render={({ field }) => (
                 <Field label="Tomas algum medicamento regularmente?"><Input placeholder="Ex: Omeprazol, Losartana (ou 'Nenhum')" {...field} value={field.value || ""} /></Field>
               )} />
@@ -697,8 +730,31 @@ export function Wizard() {
                   <Chips options={['Fome', 'Doces', 'Fim de semana', 'Ansiedade', 'Falta de tempo', 'Delivery', 'Organização', 'Constância']} value={field.value || []} onChange={field.onChange} color="orange" />
                 </Field>
               )} />
-              <Controller name="resultado_90_dias" control={control} render={({ field }) => (
-                <Field label="Que resultado concreto queres alcançar em 90 dias?" required error={errors.resultado_90_dias?.message}><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Ex: perder 5kg, melhorar a digestão, ter mais energia..." {...field} value={field.value || ""} /></Field>
+              <div className="rounded-[1rem] border border-border bg-[rgba(255,255,255,0.02)] p-[clamp(1rem,3vw,1.25rem)] space-y-5">
+                <div>
+                  <h3 className="text-[1.05rem] font-semibold text-foreground">A tua rotina à mesa</h3>
+                  <p className="text-[0.85rem] text-muted-foreground mt-1">
+                    Isto ajuda a montar um plano que cabe no teu dia a dia (e que dá para seguir).
+                  </p>
+                </div>
+                <Controller name="cozinha_propria" control={control} render={({ field }) => (
+                  <Field label="Quem prepara as tuas refeições?" description="Podes marcar mais do que uma.">
+                    <Chips options={['Eu cozinho', 'Alguém cozinha para mim', 'Compro pronto / delivery']} value={field.value || []} onChange={field.onChange} />
+                  </Field>
+                )} />
+                <Controller name="frequencia_come_fora" control={control} render={({ field }) => (
+                  <Field label="Quantas vezes por semana comes fora ou pedes delivery?" error={errors.frequencia_come_fora?.message}><RadioGroup columns={4} options={['Raramente', '1-2x/semana', '3-5x/semana', 'Todos os dias']} value={field.value || ""} onChange={field.onChange} /></Field>
+                )} />
+              </div>
+              <Controller name="suplementos_atuais" control={control} render={({ field }) => (
+                <Field label="Tomas algum suplemento atualmente?" description="Opcional. Marca o que usas hoje.">
+                  <Chips options={['Whey', 'Creatina', 'BCAA', 'Pré-treino', 'Multivitamínico', 'Ómega 3', 'Cafeína', 'Glutamina', 'Outro', 'Nenhum']} value={field.value || []} onChange={field.onChange} />
+                  {(field.value || []).includes('Outro') && (
+                    <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <Input placeholder="Qual suplemento? Descreve aqui" value={suplementoOutro} onChange={e => setSuplementoOutro(e.target.value)} />
+                    </div>
+                  )}
+                </Field>
               )} />
             </div>
           )}
