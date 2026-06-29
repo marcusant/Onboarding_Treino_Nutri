@@ -98,7 +98,15 @@ export const anamneseSchema = z.object({
 
   // Passo final: Estilo de vida / Compromisso
   qualidade_sono: z.number().min(1).max(10).default(6),
+  horas_sono: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? undefined : val),
+    z.coerce.number().min(1, "Valor inválido").max(16, "Valor inválido").optional()
+  ),
   nivel_stress: z.number().min(1).max(10).default(5),
+  // Bloco "nível de atividade" (frequência + intensidade + movimento diário) → base do TDEE.
+  frequencia_exercicio: z.enum(["Pouco ou nenhum exercício", "1-3 dias por semana", "3-5 dias por semana", "6-7 dias por semana", "Mais do que uma vez por dia"]).optional().nullable(),
+  intensidade_exercicio: z.enum(["Leve", "Moderada", "Vigorosa", "Muito vigorosa"]).optional().nullable(),
+  nivel_atividade_diaria: z.enum(["Raramente", "Ocasionalmente", "Frequentemente", "O tempo todo"]).optional().nullable(),
   alcool: z.enum(["Não", "Socialmente", "Frequentemente", "Prefiro não informar"]).optional().nullable(),
   fuma: z.enum(["Não", "Às vezes", "Sim, diariamente", "Prefiro não informar"]).optional().nullable(),
   prioridade: z.number().min(1).max(10).default(7),
