@@ -20,8 +20,8 @@ Cada pergunta está marcada com uma tag de categoria:
 | :--- | :--- |
 | [P] Dados Comuns | 24 |
 | [T] Treino | 18 |
-| [N] Nutrição | 15 |
-| **Total** | **57** |
+| [N] Nutrição | 18 |
+| **Total** | **60** |
 
 ---
 
@@ -170,6 +170,15 @@ Cada pergunta está marcada com uma tag de categoria:
 | Suplementos atuais | `suplementos_atuais` | Múltipla (Chips) | Whey, Creatina, BCAA, Pré-treino, Multivitamínico, Ómega 3, Cafeína, Glutamina, Nenhum | Não | Anamnese |
 | Objetivo nutricional | `objetivo_nutricional` | Dropdown | Perda de peso, Ganho de massa, Manutenção, Performance, Saúde geral, Recomposição | **Sim** | Anamnese |
 | Orçamento para alimentação | `orcamento_alimentacao` | Dropdown | Económico, Moderado, Confortável, Sem restrição | Não | Anamnese |
+
+### Nível de Atividade (base do TDEE)
+*Recolhido no passo Estilo de vida. **Só em trilhas com nutrição** — estima o gasto calórico (TMB × PAL = exercício + NEAT).*
+
+| Pergunta / Campo | `id` | Tipo | Opções / Detalhes | Obrigatório? | Origem |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Frequência de exercício/semana | `frequencia_exercicio` | Dropdown | Pouco/nenhum, 1-3, 3-5, 6-7 dias/sem, Mais de 1x/dia | Não | Onboarding *(só nutrição; omitido em "ambos")* |
+| Intensidade do exercício | `intensidade_exercicio` | Dropdown | Leve, Moderada, Vigorosa, Muito vigorosa | Não | Onboarding *(`nutricao`, `ambos`)* |
+| Movimento diário fora do exercício (NEAT) | `nivel_atividade_diaria` | Dropdown | Raramente, Ocasionalmente, Frequentemente, O tempo todo | Não | Onboarding *(`nutricao`, `ambos`)* |
 
 ---
 

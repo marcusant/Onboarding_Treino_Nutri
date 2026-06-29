@@ -76,6 +76,18 @@ Recolhidos **uma só vez**, servem também à estratégia nutricional. Detalhe c
 
 ---
 
+## 5. Nível de Atividade (base do TDEE)
+
+Bloco recolhido no passo **Estilo de vida** para estimar o gasto calórico diário (TMB × PAL, onde PAL = exercício + NEAT). **Só aparece em trilhas com nutrição.** Detalhe da regra condicional em [`questions_onboarding.md`](questions_onboarding.md#passo-8-estilo-de-vida-compromisso).
+
+| Pergunta / Campo | `id` | Tipo de Campo | Opções / Detalhes | Obrigatório? | Visibilidade |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Numa semana normal, com que frequência te exercitas? | `frequencia_exercicio` | Dropdown | Pouco ou nenhum exercício, 1-3 dias/sem, 3-5 dias/sem, 6-7 dias/sem, Mais do que uma vez por dia | Não | **Só nutrição** (omitido em "ambos" — vem de `frequencia_semanal` no Treino) |
+| Como descreverias a intensidade do teu exercício? | `intensidade_exercicio` | Dropdown | Leve, Moderada, Vigorosa, Muito vigorosa | Não | `nutricao`, `ambos` |
+| Fora do exercício, quanto te mexes num dia normal? (NEAT) | `nivel_atividade_diaria` | Dropdown | Raramente, Ocasionalmente, Frequentemente, O tempo todo | Não | `nutricao`, `ambos` |
+
+---
+
 ## 📋 Mapeamento das 23 Perguntas → Campos
 
 | # | Pergunta original | Categoria | `id` do campo | Onde está documentada |
