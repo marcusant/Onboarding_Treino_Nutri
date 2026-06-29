@@ -223,7 +223,8 @@ function enviarEmailDeExemplo() {
     // Nutrição
     circunferencia_cintura: 88,
     horas_sono: 6,
-    frequencia_exercicio: '3-5 dias por semana',
+    // Trilha 'ambos' NÃO coleta frequencia_exercicio (vem de frequencia_semanal
+    // no passo Treino). Só intensidade + movimento diário (NEAT) são pedidos.
     intensidade_exercicio: 'Moderada',
     nivel_atividade_diaria: 'Raramente',
     resultado_90_dias: 'Perder 5kg e melhorar a digestão',
@@ -388,9 +389,6 @@ function sendNotification_(data, whatsappLink) {
   add('Objetivo', data.objetivo);
   add('Prazo desejado', data.prazo);
   add('Resultado em 90 dias', data.resultado_90_dias);
-  add('Frequência de exercício', data.frequencia_exercicio);
-  add('Intensidade do exercício', data.intensidade_exercicio);
-  add('Movimento diário', data.nivel_atividade_diaria);
 
   // TREINO: só aparece quando há dados de treino (trilhas treino/ambos).
   if (has(data.local_treino) || has(data.frequencia_semanal) || has(data.ja_treina)) {
@@ -420,6 +418,9 @@ function sendNotification_(data, whatsappLink) {
       has(data.maior_dificuldade) || has(data.alergias_alimentares)) {
     lines.push('');
     lines.push('NUTRIÇÃO');
+    add('Frequência de exercício', data.frequencia_exercicio);
+    add('Intensidade do exercício', data.intensidade_exercicio);
+    add('Movimento diário (NEAT)', data.nivel_atividade_diaria);
     add('⚠️ ALERGIAS', data.alergias_alimentares);
     add('Alimentação num dia normal', data.alimentacao_dia_normal);
     add('Refeições por dia', data.refeicoes_por_dia);

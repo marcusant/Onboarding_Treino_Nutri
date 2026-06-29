@@ -770,45 +770,50 @@ export function Wizard() {
               <Controller name="nivel_stress" control={control} render={({ field }) => (
                 <Field label={<span className="inline-flex items-center gap-2">Nível de stress no dia a dia <span className="text-xl leading-none select-none" aria-hidden="true">{getSliderEmoji(field.value, STRESS_EMOJIS)}</span></span>} error={errors.nivel_stress?.message}><Slider min={1} max={10} value={field.value} onChange={field.onChange} labels={['Baixo', 'Alto']} emojis={STRESS_EMOJIS} /></Field>
               )} />
-              <div className="rounded-[1rem] border border-border bg-[rgba(255,255,255,0.02)] p-[clamp(1rem,3vw,1.25rem)] space-y-5">
-                <div>
-                  <h3 className="text-[1.05rem] font-semibold text-foreground">Nível de atividade</h3>
-                  <p className="text-[0.85rem] text-muted-foreground mt-1">
-                    Ajuda a estimar o teu gasto calórico diário (opcional).
-                  </p>
+              {hasNutricao(track) && (
+                <div className="rounded-[1rem] border border-border bg-[rgba(255,255,255,0.02)] p-[clamp(1rem,3vw,1.25rem)] space-y-5">
+                  <div>
+                    <h3 className="text-[1.05rem] font-semibold text-foreground">Nível de atividade</h3>
+                    <p className="text-[0.85rem] text-muted-foreground mt-1">
+                      Ajuda a estimar o teu gasto calórico diário (opcional).
+                    </p>
+                  </div>
+                  {/* Frequência só na trilha de nutrição pura: em "ambos" já vem do passo Treino (frequencia_semanal). */}
+                  {!hasTreino(track) && (
+                    <Controller name="frequencia_exercicio" control={control} render={({ field }) => (
+                      <Field label="Numa semana normal, com que frequência te exercitas?" error={errors.frequencia_exercicio?.message}>
+                        <Select searchable={false} placeholder="Seleciona..." value={field.value || ""} onChange={field.onChange} options={[
+                          { label: 'Pouco ou nenhum exercício', value: 'Pouco ou nenhum exercício' },
+                          { label: '1-3 dias por semana', value: '1-3 dias por semana' },
+                          { label: '3-5 dias por semana', value: '3-5 dias por semana' },
+                          { label: '6-7 dias por semana', value: '6-7 dias por semana' },
+                          { label: 'Mais do que uma vez por dia', value: 'Mais do que uma vez por dia' },
+                        ]} />
+                      </Field>
+                    )} />
+                  )}
+                  <Controller name="intensidade_exercicio" control={control} render={({ field }) => (
+                    <Field label="Como descreverias a intensidade do teu exercício?" error={errors.intensidade_exercicio?.message}>
+                      <Select searchable={false} placeholder="Seleciona..." value={field.value || ""} onChange={field.onChange} options={[
+                        { label: 'Leve (caminhar, bicicleta, yoga, dança)', value: 'Leve' },
+                        { label: 'Moderada (corrida leve, ciclismo, natação, caminhada)', value: 'Moderada' },
+                        { label: 'Vigorosa (correr, desportos, HIIT, subir escadas)', value: 'Vigorosa' },
+                        { label: 'Muito vigorosa (trabalho físico pesado)', value: 'Muito vigorosa' },
+                      ]} />
+                    </Field>
+                  )} />
+                  <Controller name="nivel_atividade_diaria" control={control} render={({ field }) => (
+                    <Field label="Fora do exercício, quanto te mexes num dia normal?" error={errors.nivel_atividade_diaria?.message}>
+                      <Select searchable={false} placeholder="Seleciona..." value={field.value || ""} onChange={field.onChange} options={[
+                        { label: 'Raramente (trabalho sentado, a maior parte do tempo dentro de casa)', value: 'Raramente' },
+                        { label: 'Ocasionalmente (de pé parte do dia)', value: 'Ocasionalmente' },
+                        { label: 'Frequentemente (de pé a maior parte do dia)', value: 'Frequentemente' },
+                        { label: 'O tempo todo (trabalho/estilo de vida fisicamente exigente)', value: 'O tempo todo' },
+                      ]} />
+                    </Field>
+                  )} />
                 </div>
-                <Controller name="frequencia_exercicio" control={control} render={({ field }) => (
-                  <Field label="Numa semana normal, com que frequência te exercitas?" error={errors.frequencia_exercicio?.message}>
-                    <Select searchable={false} placeholder="Seleciona..." value={field.value || ""} onChange={field.onChange} options={[
-                      { label: 'Pouco ou nenhum exercício', value: 'Pouco ou nenhum exercício' },
-                      { label: '1-3 dias por semana', value: '1-3 dias por semana' },
-                      { label: '3-5 dias por semana', value: '3-5 dias por semana' },
-                      { label: '6-7 dias por semana', value: '6-7 dias por semana' },
-                      { label: 'Mais do que uma vez por dia', value: 'Mais do que uma vez por dia' },
-                    ]} />
-                  </Field>
-                )} />
-                <Controller name="intensidade_exercicio" control={control} render={({ field }) => (
-                  <Field label="Como descreverias a intensidade do teu exercício?" error={errors.intensidade_exercicio?.message}>
-                    <Select searchable={false} placeholder="Seleciona..." value={field.value || ""} onChange={field.onChange} options={[
-                      { label: 'Leve (caminhar, bicicleta, yoga, dança)', value: 'Leve' },
-                      { label: 'Moderada (corrida leve, ciclismo, natação, caminhada)', value: 'Moderada' },
-                      { label: 'Vigorosa (correr, desportos, HIIT, subir escadas)', value: 'Vigorosa' },
-                      { label: 'Muito vigorosa (trabalho físico pesado)', value: 'Muito vigorosa' },
-                    ]} />
-                  </Field>
-                )} />
-                <Controller name="nivel_atividade_diaria" control={control} render={({ field }) => (
-                  <Field label="Fora do exercício, quanto te mexes num dia normal?" error={errors.nivel_atividade_diaria?.message}>
-                    <Select searchable={false} placeholder="Seleciona..." value={field.value || ""} onChange={field.onChange} options={[
-                      { label: 'Raramente (trabalho sentado, a maior parte do tempo dentro de casa)', value: 'Raramente' },
-                      { label: 'Ocasionalmente (de pé parte do dia)', value: 'Ocasionalmente' },
-                      { label: 'Frequentemente (de pé a maior parte do dia)', value: 'Frequentemente' },
-                      { label: 'O tempo todo (trabalho/estilo de vida fisicamente exigente)', value: 'O tempo todo' },
-                    ]} />
-                  </Field>
-                )} />
-              </div>
+              )}
               <div className="rounded-[1rem] border border-border bg-[rgba(255,255,255,0.02)] p-[clamp(1rem,3vw,1.25rem)] space-y-5">
                 <div>
                   <h3 className="text-[1.05rem] font-semibold text-foreground">Hábitos</h3>
