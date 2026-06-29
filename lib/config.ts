@@ -8,4 +8,4 @@
 // sem alterar código, ex.: ambiente de testes).
 export const APPS_SCRIPT_URL =
   process.env.APPS_SCRIPT_URL ||
-  "https://script.google.com/macros/s/AKfycbwQwjTm96fZiuv_OPaGiqeJJ6KfT_RqvfrQ6oArvEf_8I9d8xsmw46s_JfTPChiXY8/exec";
+  "https://script.google.com/macros/s/AKfycbzzTqB-tDmjeNMU7jHQpGMWtZbIOKsgyTR13obBWxvQDI2ITEpeMJuQOEOgVk61VPw4/exec";

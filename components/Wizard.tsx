@@ -1,9 +1,9 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { anamneseSchema, type AnamneseFormValues } from '@/lib/schema';
+import { anamneseSchema, hasTreino, hasNutricao, type AnamneseFormValues, type Track } from '@/lib/schema';
 import { submitLead } from '@/app/actions/submitLead';
 import { Input } from '@/components/ui/Input';
 import { RadioGroup } from '@/components/ui/RadioGroup';
@@ -66,61 +66,108 @@ const OBJECTIVE_OPTIONS = [
   }
 ];
 
-const STEPS = [
+// ---- Definição dos passos (renderizados por id, montados conforme a trilha) ----
+type StepDef = { id: string; icon: string; title: string; subtitle: string; fields: readonly string[] };
+
+const STEP_CONTATO: StepDef = {
+  id: 'contato',
+  icon: '👋',
+  title: 'Contato',
+  subtitle: 'Vamos começar pelo básico. Como falamos contigo?',
+  fields: ['nome_completo', 'email', 'codigo_pais', 'whatsapp', 'data_nascimento', 'genero', 'nacionalidade', 'pais_residencia', 'cidade_residencia', 'profissao']
+};
+const STEP_OBJETIVO: StepDef = {
+  id: 'objetivo',
+  icon: '🎯',
+  title: 'Objetivo',
+  subtitle: 'O que te traz aqui? Quero perceber o teu porquê.',
+  fields: ['objetivo', 'motivacao_principal', 'prazo', 'tentou_antes']
+};
+const STEP_MEDIDAS: StepDef = {
+  id: 'medidas',
+  icon: '📏',
+  title: 'Medidas',
+  subtitle: 'Um ponto de partida para acompanhar a tua evolução.',
+  fields: ['altura_cm', 'peso_avaliacao', 'percentual_gordura']
+};
+const STEP_SAUDE: StepDef = {
+  id: 'saude',
+  icon: '🩺',
+  title: 'Saúde',
+  subtitle: 'Segurança em primeiro lugar. Marca tudo o que se aplica.',
+  fields: ['lesoes_anteriores', 'condicoes_medicas', 'liberacao_medica', 'dor_movimento', 'gestante']
+};
+const STEP_TREINO: StepDef = {
+  id: 'treino',
+  icon: '🏋️',
+  title: 'Treino',
+  subtitle: 'Onde, quando e como treinas, para montar algo realista.',
+  fields: ['nivel', 'ja_treina', 'tempo_treino', 'tipos_treino', 'local_treino', 'frequencia_semanal', 'tempo_sessao', 'horario_treino', 'equipamentos']
+};
+const STEP_SAUDE_NUTRI: StepDef = {
+  id: 'saude_nutricional',
+  icon: '🩹',
+  title: 'Saúde nutricional',
+  subtitle: 'Para uma estratégia segura, conta-me o teu cenário clínico.',
+  fields: ['medicamentos', 'cirurgia_relevante', 'exames_recentes', 'compulsao_alimentar']
+};
+const STEP_HABITOS: StepDef = {
+  id: 'habitos_alimentares',
+  icon: '🥗',
+  title: 'Hábitos alimentares',
+  subtitle: 'Agora o teu dia a dia à mesa, para montar algo realista.',
+  fields: ['alimentacao_dia_normal', 'refeicoes_por_dia', 'horarios_fome', 'agua_por_dia', 'alimentos_gosta', 'alimentos_evita', 'restricoes_alimentares', 'maior_dificuldade', 'resultado_90_dias']
+};
+const STEP_COMPROMISSO: StepDef = {
+  id: 'compromisso',
+  icon: '💪',
+  title: 'Estilo de vida',
+  subtitle: 'Quase lá! Isto ajuda-me a perceber o teu momento.',
+  fields: ['qualidade_sono', 'nivel_stress', 'alcool', 'fuma', 'prioridade', 'acompanhamento', 'observacoes', 'consentimento']
+};
+
+function buildSteps(track: Track): StepDef[] {
+  const steps: StepDef[] = [STEP_CONTATO, STEP_OBJETIVO, STEP_MEDIDAS, STEP_SAUDE];
+  if (hasTreino(track)) steps.push(STEP_TREINO);
+  if (hasNutricao(track)) steps.push(STEP_SAUDE_NUTRI, STEP_HABITOS);
+  steps.push(STEP_COMPROMISSO);
+  return steps;
+}
+
+const TRACK_OPTIONS: { value: Track; icon: React.ReactNode; title: string; desc: string }[] = [
   {
-    id: 'contato',
-    icon: '👋',
-    title: 'Contato',
-    subtitle: 'Vamos começar pelo básico. Como falamos contigo?',
-    fields: ['nome_completo', 'email', 'codigo_pais', 'whatsapp', 'data_nascimento', 'genero', 'nacionalidade', 'pais_residencia', 'cidade_residencia', 'profissao']
-  },
-  {
-    id: 'objetivo',
-    icon: '🎯',
-    title: 'Objetivo',
-    subtitle: 'O que te traz aqui? Quero perceber o teu porquê.',
-    fields: ['objetivo', 'motivacao_principal', 'prazo', 'tentou_antes']
-  },
-  {
-    id: 'medidas',
-    icon: '📏',
-    title: 'Medidas',
-    subtitle: 'Um ponto de partida para acompanhar a tua evolução.',
-    fields: ['altura_cm', 'peso_avaliacao', 'percentual_gordura']
-  },
-  {
-    id: 'saude',
-    icon: '🩺',
-    title: 'Saúde',
-    subtitle: 'Segurança em primeiro lugar. Marca tudo o que se aplica.',
-    fields: ['lesoes_anteriores', 'condicoes_medicas', 'liberacao_medica', 'dor_movimento', 'gestante']
-  },
-  {
-    id: 'treino',
+    value: 'treino',
     icon: '🏋️',
-    title: 'Treino',
-    subtitle: 'Onde, quando e como treinas, para montar algo realista.',
-    fields: ['nivel', 'ja_treina', 'tempo_treino', 'tipos_treino', 'local_treino', 'frequencia_semanal', 'tempo_sessao', 'horario_treino', 'equipamentos']
+    title: 'Só treino',
+    desc: 'Plano de treino personalizado para os teus objetivos e rotina.'
   },
   {
-    id: 'compromisso',
-    icon: '💪',
-    title: 'Estilo de vida',
-    subtitle: 'Quase lá! Isto ajuda-me a perceber o teu momento.',
-    fields: ['qualidade_sono', 'nivel_stress', 'alcool', 'fuma', 'prioridade', 'acompanhamento', 'observacoes', 'consentimento']
+    value: 'nutricao',
+    icon: '🥗',
+    title: 'Só nutrição',
+    desc: 'Estratégia alimentar adaptada aos teus hábitos e preferências.'
+  },
+  {
+    value: 'ambos',
+    icon: '🔥',
+    title: 'Treino + Nutrição',
+    desc: 'O acompanhamento completo: treino e alimentação juntos.'
   }
-] as const;
+];
 
 export function Wizard() {
+  const [track, setTrackState] = useState<Track | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [maxStepReached, setMaxStepReached] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  // Texto livre quando "Outra" é selecionada nas lesões / condições médicas.
+  // Texto livre quando "Outra" é selecionada nas listas de chips.
   const [lesaoOutra, setLesaoOutra] = useState("");
   const [condicaoOutra, setCondicaoOutra] = useState("");
   const [treinoOutro, setTreinoOutro] = useState("");
-  const [outraErrors, setOutraErrors] = useState<{ lesao?: string; condicao?: string }>({});
+  const [exameOutro, setExameOutro] = useState("");
+  const [restricaoOutra, setRestricaoOutra] = useState("");
+  const [outraErrors, setOutraErrors] = useState<{ lesao?: string; condicao?: string; restricao?: string }>({});
 
   const { control, handleSubmit, trigger, formState: { errors }, watch, getValues, setValue } = useForm<AnamneseFormValues>({
     resolver: zodResolver(anamneseSchema) as Resolver<AnamneseFormValues>,
@@ -131,13 +178,29 @@ export function Wizard() {
 
   const watchGenero = watch("genero");
 
+  // Data máxima de nascimento = hoje - 18 anos (bloqueia menores no seletor).
+  const maxBirthDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split('T')[0];
+  }, []);
+
   // Validade reativa do formulário inteiro (consentimento + obrigatórios).
   // Usa safeParse para não disparar mensagens de erro só por observar.
   const watchedValues = watch();
   const parseResult = anamneseSchema.safeParse(watchedValues);
   const isFormValid = parseResult.success;
 
-  const step = STEPS[currentStep];
+  const steps = useMemo(() => (track ? buildSteps(track) : []), [track]);
+  const step = steps[currentStep];
+
+  const selectTrack = (value: Track) => {
+    setValue('track', value);
+    setTrackState(value);
+    setCurrentStep(0);
+    setMaxStepReached(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Validade reativa apenas dos campos do passo atual: o botão "Próximo"
   // só acende quando os obrigatórios deste passo estão preenchidos,
@@ -145,14 +208,19 @@ export function Wizard() {
   const stepFieldsWithError = parseResult.success
     ? new Set<string>()
     : new Set(parseResult.error.issues.map((issue) => String(issue.path[0])));
-  let isStepValid = !(step.fields as readonly string[]).some((field) =>
-    stepFieldsWithError.has(field)
-  );
-  if (step.id === 'saude') {
+  let isStepValid = step
+    ? !(step.fields as readonly string[]).some((field) => stepFieldsWithError.has(field))
+    : false;
+  if (step?.id === 'saude') {
     if ((watchedValues.lesoes_anteriores || []).includes('Outra') && !lesaoOutra.trim()) {
       isStepValid = false;
     }
     if ((watchedValues.condicoes_medicas || []).includes('Outra') && !condicaoOutra.trim()) {
+      isStepValid = false;
+    }
+  }
+  if (step?.id === 'habitos_alimentares') {
+    if ((watchedValues.restricoes_alimentares || []).includes('Outra') && !restricaoOutra.trim()) {
       isStepValid = false;
     }
   }
@@ -161,20 +229,27 @@ export function Wizard() {
     const fieldsToValidate = step.fields as any;
     const isValid = await trigger(fieldsToValidate);
 
-    // No passo Saúde, exige o detalhe quando "Outra" está selecionada.
+    // Exige o detalhe quando "Outra" está selecionada nos passos relevantes.
     let outraValid = true;
+    const errs: { lesao?: string; condicao?: string; restricao?: string } = {};
     if (step.id === 'saude') {
       const vals = getValues();
-      const errs: { lesao?: string; condicao?: string } = {};
       if ((vals.lesoes_anteriores || []).includes('Outra') && !lesaoOutra.trim()) {
         errs.lesao = 'Descreve a outra lesão';
       }
       if ((vals.condicoes_medicas || []).includes('Outra') && !condicaoOutra.trim()) {
         errs.condicao = 'Descreve a outra condição';
       }
-      setOutraErrors(errs);
       outraValid = !errs.lesao && !errs.condicao;
     }
+    if (step.id === 'habitos_alimentares') {
+      const vals = getValues();
+      if ((vals.restricoes_alimentares || []).includes('Outra') && !restricaoOutra.trim()) {
+        errs.restricao = 'Descreve a outra restrição';
+      }
+      outraValid = !errs.restricao;
+    }
+    setOutraErrors(errs);
 
     if (isValid && outraValid) {
       const next = currentStep + 1;
@@ -185,7 +260,15 @@ export function Wizard() {
     }
   };
 
-  const handlePrev = () => setCurrentStep(prev => prev - 1);
+  const handlePrev = () => {
+    if (currentStep === 0) {
+      // Volta para a tela de escolha de trilha.
+      setTrackState(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    setCurrentStep(prev => prev - 1);
+  };
 
   // Substitui a opção "Outra"/"Outros" pelo texto livre informado
   // (ex: "Outra: tendinite"), mantendo tudo no mesmo campo/coluna da planilha.
@@ -201,9 +284,12 @@ export function Wizard() {
     try {
       const payload: AnamneseFormValues = {
         ...data,
+        track: (track || data.track) as Track,
         lesoes_anteriores: applyOutra(data.lesoes_anteriores, lesaoOutra),
         condicoes_medicas: applyOutra(data.condicoes_medicas, condicaoOutra),
         tipos_treino: applyOutra(data.tipos_treino, treinoOutro, "Outros"),
+        exames_recentes: applyOutra(data.exames_recentes, exameOutro, "Outros"),
+        restricoes_alimentares: applyOutra(data.restricoes_alimentares, restricaoOutra),
       };
       const result = await submitLead(payload);
       if (!result?.success) {
@@ -230,24 +316,54 @@ export function Wizard() {
     );
   }
 
-  const progress = ((currentStep + 1) / STEPS.length) * 100;
+  // ---- Tela de escolha de trilha (antes do wizard) ----
+  if (!track) {
+    return (
+      <div className="w-full animate-[stepIn_0.4s_cubic-bezier(0.16,1,0.3,1)]">
+        <div className="text-center mb-8">
+          <h1 className="text-[clamp(1.6rem,5vw,2.1rem)] font-bold text-foreground leading-tight">Por onde queres começar?</h1>
+          <p className="text-muted-foreground mt-2 text-[0.98rem] max-w-[32rem] mx-auto">
+            Escolhe o tipo de acompanhamento. As perguntas seguintes adaptam-se à tua escolha.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {TRACK_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => selectTrack(opt.value)}
+              className="group relative flex flex-col items-start text-left rounded-[1.25rem] border border-border bg-card p-5 transition-all duration-200 cursor-pointer hover:border-primary hover:-translate-y-1 hover:shadow-[0_24px_60px_-28px_rgba(113,95,219,0.9)] focus:outline-none focus-visible:border-primary focus-visible:shadow-[0_0_0_3px_rgba(113,95,219,0.35)]"
+            >
+              <span className="text-[2rem] mb-3 transition-transform duration-200 group-hover:scale-110">{opt.icon}</span>
+              <span className="text-[1.1rem] font-bold text-foreground">{opt.title}</span>
+              <span className="text-[0.88rem] text-muted-foreground mt-1.5 leading-snug">{opt.desc}</span>
+              <span className="mt-4 inline-flex items-center gap-1.5 text-[0.85rem] font-semibold text-primary opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+                Começar
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const progress = ((currentStep + 1) / steps.length) * 100;
 
   return (
     <div className="w-full">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2.5">
-          {currentStep > 0 && (
-            <button
-              type="button"
-              onClick={handlePrev}
-              aria-label="Voltar ao passo anterior"
-              className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full border border-border bg-transparent text-muted-foreground transition-all duration-200 cursor-pointer hover:text-foreground hover:border-primary"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handlePrev}
+            aria-label={currentStep === 0 ? "Voltar à escolha inicial" : "Voltar ao passo anterior"}
+            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full border border-border bg-transparent text-muted-foreground transition-all duration-200 cursor-pointer hover:text-foreground hover:border-primary"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>
+          </button>
           <div className="flex-1 min-w-0 flex justify-between items-center text-[0.72rem] uppercase tracking-[0.12em] text-muted-foreground font-semibold">
-            <span>Passo <strong className="text-primary">{currentStep + 1} de {STEPS.length}</strong></span>
+            <span>Passo <strong className="text-primary">{currentStep + 1} de {steps.length}</strong></span>
             <span className="truncate ml-2">{step.title.toUpperCase()}</span>
           </div>
           {currentStep < maxStepReached && (
@@ -270,7 +386,7 @@ export function Wizard() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-[1.25rem] p-[clamp(1.25rem,4vw,2rem)] shadow-[0_24px_60px_-28px_rgba(0,0,0,0.8)] animate-[stepIn_0.4s_cubic-bezier(0.16,1,0.3,1)]" key={currentStep}>
+      <div className="bg-card border border-border rounded-[1.25rem] p-[clamp(1.25rem,4vw,2rem)] shadow-[0_24px_60px_-28px_rgba(0,0,0,0.8)] animate-[stepIn_0.4s_cubic-bezier(0.16,1,0.3,1)]" key={`${track}-${currentStep}`}>
         <div className="mb-6">
           <div className="text-[1.75rem]">{step.icon}</div>
           <h2 className="text-2xl font-bold mt-1.5">{step.title}</h2>
@@ -278,7 +394,7 @@ export function Wizard() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          {currentStep === 0 && (
+          {step.id === 'contato' && (
             <div className="space-y-6">
               <Controller name="nome_completo" control={control} render={({ field }) => (
                 <Field label="Nome completo" required error={errors.nome_completo?.message}><Input placeholder="O teu nome" {...field} value={field.value || ""} error={errors.nome_completo?.message} /></Field>
@@ -294,42 +410,42 @@ export function Wizard() {
                 )} />
               </Field>
               <Controller name="data_nascimento" control={control} render={({ field }) => (
-                <Field label="Data de nascimento" required error={errors.data_nascimento?.message}><Input type="date" {...field} value={field.value || ""} error={errors.data_nascimento?.message} /></Field>
+                <Field label="Data de nascimento" required error={errors.data_nascimento?.message}><Input type="date" max={maxBirthDate} {...field} value={field.value || ""} error={errors.data_nascimento?.message} /></Field>
               )} />
               <Controller name="genero" control={control} render={({ field }) => (
                 <Field label="Gênero" required error={errors.genero?.message}>
-                  <RadioGroup 
+                  <RadioGroup
                     options={[
-                      { 
+                      {
                         label: (
                           <span className="flex items-center gap-2 justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-80"><circle cx="10" cy="14" r="5" /><line x1="13.5" y1="10.5" x2="21" y2="3" /><line x1="16" y1="3" x2="21" y2="3" /><line x1="21" y1="3" x2="21" y2="8" /></svg>
                             Masculino
                           </span>
-                        ), 
-                        value: "Masculino" 
+                        ),
+                        value: "Masculino"
                       },
-                      { 
+                      {
                         label: (
                           <span className="flex items-center gap-2 justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-80"><circle cx="12" cy="10" r="5" /><line x1="12" y1="15" x2="12" y2="22" /><line x1="9" y1="19" x2="15" y2="19" /></svg>
                             Feminino
                           </span>
-                        ), 
-                        value: "Feminino" 
+                        ),
+                        value: "Feminino"
                       }
-                    ]} 
-                    value={field.value} 
-                    onChange={field.onChange} 
-                    error={errors.genero?.message} 
+                    ]}
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.genero?.message}
                   />
                 </Field>
               )} />
               <Controller name="nacionalidade" control={control} render={({ field }) => (
                 <Field label="Nacionalidade" required error={errors.nacionalidade?.message}>
-                  <Select 
-                    value={field.value || ""} 
-                    onChange={field.onChange} 
+                  <Select
+                    value={field.value || ""}
+                    onChange={field.onChange}
                     options={NATIONALITIES.map(n => ({ label: n, value: n }))}
                     placeholder="Seleciona a nacionalidade..."
                     error={errors.nacionalidade?.message}
@@ -338,9 +454,9 @@ export function Wizard() {
               )} />
               <Controller name="pais_residencia" control={control} render={({ field }) => (
                 <Field label="País de residência" error={errors.pais_residencia?.message}>
-                  <Select 
-                    value={field.value || ""} 
-                    onChange={field.onChange} 
+                  <Select
+                    value={field.value || ""}
+                    onChange={field.onChange}
                     options={COUNTRIES.map(c => ({ label: c, value: c }))}
                     placeholder="Seleciona o país..."
                     error={errors.pais_residencia?.message}
@@ -356,13 +472,13 @@ export function Wizard() {
             </div>
           )}
 
-          {currentStep === 1 && (
+          {step.id === 'objetivo' && (
             <div className="space-y-6">
               <Controller name="objetivo" control={control} render={({ field }) => (
                 <Field label="Qual o teu principal objetivo?" required error={errors.objetivo?.message}>
-                  <RadioGroup 
-                    options={OBJECTIVE_OPTIONS} 
-                    value={field.value} 
+                  <RadioGroup
+                    options={OBJECTIVE_OPTIONS}
+                    value={field.value}
                     onChange={(val) => {
                       field.onChange(val);
                       // Clear secondary objectives if they contain the new main objective
@@ -370,8 +486,8 @@ export function Wizard() {
                       if (currentSec.includes(val)) {
                         setValue('objetivos_secundarios', currentSec.filter(v => v !== val));
                       }
-                    }} 
-                    error={errors.objetivo?.message} 
+                    }}
+                    error={errors.objetivo?.message}
                   />
                 </Field>
               )} />
@@ -379,12 +495,12 @@ export function Wizard() {
               {watch('objetivo') && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <Controller name="objetivos_secundarios" control={control} render={({ field }) => (
-                    <Field 
-                      label="Tens algum objetivo secundário? (opcional)" 
+                    <Field
+                      label="Tens algum objetivo secundário? (opcional)"
                       description="Podes escolher até 2."
                       error={errors.objetivos_secundarios?.message}
                     >
-                      <CheckboxGroup 
+                      <CheckboxGroup
                         options={OBJECTIVE_OPTIONS.filter(opt => opt.value !== watch('objetivo'))}
                         value={field.value || []}
                         onChange={field.onChange}
@@ -407,7 +523,7 @@ export function Wizard() {
             </div>
           )}
 
-          {currentStep === 2 && (
+          {step.id === 'medidas' && (
             <div className="space-y-6">
               <Controller name="altura_cm" control={control} render={({ field }) => (
                 <Field label="Altura (cm)" required error={errors.altura_cm?.message}><Input type="number" placeholder="Ex: 175" {...field} value={field.value || ""} error={errors.altura_cm?.message} onChange={e => field.onChange(Number(e.target.value) || "")} /></Field>
@@ -421,19 +537,21 @@ export function Wizard() {
             </div>
           )}
 
-          {currentStep === 3 && (
+          {step.id === 'saude' && (
             <div className="space-y-6">
-              <Controller name="lesoes_anteriores" control={control} render={({ field }) => (
-                <Field label="Lesões (atuais ou passadas)" required error={errors.lesoes_anteriores?.message}>
-                  <Chips options={['Ombro', 'Joelho', 'Lombar', 'Cervical', 'Tornozelo', 'Punho', 'Quadril', 'Cotovelo', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="red" />
-                  {(field.value || []).includes('Outra') && (
-                    <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <Input placeholder="Qual lesão? Descreve aqui" value={lesaoOutra} onChange={e => { setLesaoOutra(e.target.value); if (outraErrors.lesao) setOutraErrors(prev => ({ ...prev, lesao: undefined })); }} error={outraErrors.lesao} />
-                      {outraErrors.lesao && <p className="text-[0.85rem] text-red-500 mt-1">{outraErrors.lesao}</p>}
-                    </div>
-                  )}
-                </Field>
-              )} />
+              {hasTreino(track) && (
+                <Controller name="lesoes_anteriores" control={control} render={({ field }) => (
+                  <Field label="Lesões (atuais ou passadas)" required error={errors.lesoes_anteriores?.message}>
+                    <Chips options={['Ombro', 'Joelho', 'Lombar', 'Cervical', 'Tornozelo', 'Punho', 'Quadril', 'Cotovelo', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="red" />
+                    {(field.value || []).includes('Outra') && (
+                      <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <Input placeholder="Qual lesão? Descreve aqui" value={lesaoOutra} onChange={e => { setLesaoOutra(e.target.value); if (outraErrors.lesao) setOutraErrors(prev => ({ ...prev, lesao: undefined })); }} error={outraErrors.lesao} />
+                        {outraErrors.lesao && <p className="text-[0.85rem] text-red-500 mt-1">{outraErrors.lesao}</p>}
+                      </div>
+                    )}
+                  </Field>
+                )} />
+              )}
               <Controller name="condicoes_medicas" control={control} render={({ field }) => (
                 <Field label="Tens alguma condição médica?" required error={errors.condicoes_medicas?.message}>
                   <Chips options={['Hipertensão', 'Diabetes', 'Cardíaca', 'Hérnia', 'Respiratória', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="orange" />
@@ -445,12 +563,16 @@ export function Wizard() {
                   )}
                 </Field>
               )} />
-              <Controller name="liberacao_medica" control={control} render={({ field }) => (
-                <Field label="Tens liberação médica para atividade física?" required error={errors.liberacao_medica?.message}><RadioGroup options={['Sim', 'Não', 'Não preciso']} value={field.value || ""} onChange={field.onChange} /></Field>
-              )} />
-              <Controller name="dor_movimento" control={control} render={({ field }) => (
-                <Field label="Sentes dor em algum movimento específico?"><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Opcional, ex: dor no joelho ao agachar" {...field} value={field.value || ""} /></Field>
-              )} />
+              {hasTreino(track) && (
+                <Controller name="liberacao_medica" control={control} render={({ field }) => (
+                  <Field label="Tens liberação médica para atividade física?" required error={errors.liberacao_medica?.message}><RadioGroup options={['Sim', 'Não', 'Não preciso']} value={field.value || ""} onChange={field.onChange} error={errors.liberacao_medica?.message} /></Field>
+                )} />
+              )}
+              {hasTreino(track) && (
+                <Controller name="dor_movimento" control={control} render={({ field }) => (
+                  <Field label="Sentes dor em algum movimento específico?"><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Opcional, ex: dor no joelho ao agachar" {...field} value={field.value || ""} /></Field>
+                )} />
+              )}
               {watchGenero === "Feminino" && (
                 <Controller name="gestante" control={control} render={({ field }) => (
                   <Field label="Estás gestante ou em pós-parto recente?" error={errors.gestante?.message}><RadioGroup options={['Sim', 'Não', 'Não se aplica']} value={field.value || ""} onChange={field.onChange} /></Field>
@@ -459,7 +581,7 @@ export function Wizard() {
             </div>
           )}
 
-          {currentStep === 4 && (
+          {step.id === 'treino' && (
             <div className="space-y-6">
               <Controller name="nivel" control={control} render={({ field }) => (
                 <Field label="Como avalias o teu nível?" error={errors.nivel?.message}><RadioGroup options={['Iniciante', 'Intermediário', 'Avançado']} value={field.value || ""} onChange={field.onChange} /></Field>
@@ -513,7 +635,75 @@ export function Wizard() {
             </div>
           )}
 
-          {currentStep === 5 && (
+          {step.id === 'saude_nutricional' && (
+            <div className="space-y-6">
+              <Controller name="medicamentos" control={control} render={({ field }) => (
+                <Field label="Tomas algum medicamento regularmente?"><Input placeholder="Ex: Omeprazol, Losartana (ou 'Nenhum')" {...field} value={field.value || ""} /></Field>
+              )} />
+              <Controller name="cirurgia_relevante" control={control} render={({ field }) => (
+                <Field label="Já fizeste alguma cirurgia relevante? (ex: bariátrica)"><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Opcional: descreve qual e quando" {...field} value={field.value || ""} /></Field>
+              )} />
+              <Controller name="exames_recentes" control={control} render={({ field }) => (
+                <Field label="Tens exames recentes? Marca o que fizeste." description="Opcional. Ajuda a ajustar a estratégia.">
+                  <Chips options={['Ferro', 'B12', 'Vitamina D', 'Glicemia', 'Colesterol', 'Triglicéridos', 'TSH', 'Outros', 'Nenhum']} value={field.value || []} onChange={field.onChange} />
+                  {(field.value || []).includes('Outros') && (
+                    <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <Input placeholder="Qual exame? Descreve aqui" value={exameOutro} onChange={e => setExameOutro(e.target.value)} />
+                    </div>
+                  )}
+                </Field>
+              )} />
+              <Controller name="compulsao_alimentar" control={control} render={({ field }) => (
+                <Field label="Sentes compulsão ou perda de controlo ao comer?" error={errors.compulsao_alimentar?.message}><RadioGroup columns={4} options={['Nunca', 'Às vezes', 'Frequentemente', 'Prefiro não dizer']} value={field.value || ""} onChange={field.onChange} /></Field>
+              )} />
+            </div>
+          )}
+
+          {step.id === 'habitos_alimentares' && (
+            <div className="space-y-6">
+              <Controller name="alimentacao_dia_normal" control={control} render={({ field }) => (
+                <Field label="Como é a tua alimentação num dia normal?" required error={errors.alimentacao_dia_normal?.message}><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[7rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Ex: Pequeno-almoço com café e pão, almoço com arroz, frango e salada, jantar..." {...field} value={field.value || ""} /></Field>
+              )} />
+              <Controller name="refeicoes_por_dia" control={control} render={({ field }) => (
+                <Field label="Quantas refeições fazes por dia?" required error={errors.refeicoes_por_dia?.message}><RadioGroup columns={4} options={['1-2', '3', '4', '5+']} value={field.value || ""} onChange={field.onChange} error={errors.refeicoes_por_dia?.message} /></Field>
+              )} />
+              <Controller name="horarios_fome" control={control} render={({ field }) => (
+                <Field label="Em que horários costumas sentir mais fome?">
+                  <Chips options={['Manhã', 'Tarde', 'Noite', 'Madrugada', 'Variável']} value={field.value || []} onChange={field.onChange} />
+                </Field>
+              )} />
+              <Controller name="agua_por_dia" control={control} render={({ field }) => (
+                <Field label="Quanta água bebes por dia?" required error={errors.agua_por_dia?.message}><RadioGroup columns={4} options={['< 1L', '1-2L', '2-3L', '> 3L']} value={field.value || ""} onChange={field.onChange} error={errors.agua_por_dia?.message} /></Field>
+              )} />
+              <Controller name="alimentos_gosta" control={control} render={({ field }) => (
+                <Field label="Que alimentos gostas e gostarias de manter?"><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Opcional: ex: frango, arroz, fruta, iogurte..." {...field} value={field.value || ""} /></Field>
+              )} />
+              <Controller name="alimentos_evita" control={control} render={({ field }) => (
+                <Field label="Que alimentos não gostas ou não toleras?"><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Opcional: ex: peixe, brócolos..." {...field} value={field.value || ""} /></Field>
+              )} />
+              <Controller name="restricoes_alimentares" control={control} render={({ field }) => (
+                <Field label="Tens alguma restrição alimentar?" required error={errors.restricoes_alimentares?.message}>
+                  <Chips options={['Vegetariano', 'Vegano', 'Sem Glúten', 'Sem Lactose', 'Low Carb', 'Kosher', 'Halal', 'Outra', 'Nenhuma']} value={field.value || []} onChange={field.onChange} color="green" />
+                  {(field.value || []).includes('Outra') && (
+                    <div className="mt-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <Input placeholder="Qual restrição? Descreve aqui" value={restricaoOutra} onChange={e => { setRestricaoOutra(e.target.value); if (outraErrors.restricao) setOutraErrors(prev => ({ ...prev, restricao: undefined })); }} error={outraErrors.restricao} />
+                      {outraErrors.restricao && <p className="text-[0.85rem] text-red-500 mt-1">{outraErrors.restricao}</p>}
+                    </div>
+                  )}
+                </Field>
+              )} />
+              <Controller name="maior_dificuldade" control={control} render={({ field }) => (
+                <Field label="Qual a tua maior dificuldade com a alimentação?" required error={errors.maior_dificuldade?.message}>
+                  <Chips options={['Fome', 'Doces', 'Fim de semana', 'Ansiedade', 'Falta de tempo', 'Delivery', 'Organização', 'Constância']} value={field.value || []} onChange={field.onChange} color="orange" />
+                </Field>
+              )} />
+              <Controller name="resultado_90_dias" control={control} render={({ field }) => (
+                <Field label="Que resultado concreto queres alcançar em 90 dias?" required error={errors.resultado_90_dias?.message}><textarea className="w-full rounded-[0.75rem] border border-border bg-input px-[0.95rem] py-[0.8rem] text-[1rem] text-foreground min-h-[5.5rem] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(113,95,219,0.25)]" placeholder="Ex: perder 5kg, melhorar a digestão, ter mais energia..." {...field} value={field.value || ""} /></Field>
+              )} />
+            </div>
+          )}
+
+          {step.id === 'compromisso' && (
             <div className="space-y-6">
               <Controller name="qualidade_sono" control={control} render={({ field }) => (
                 <Field label={<span className="inline-flex items-center gap-2">Qualidade do teu sono <span className="text-xl leading-none select-none" aria-hidden="true">{getSliderEmoji(field.value, SONO_EMOJIS)}</span></span>} error={errors.qualidade_sono?.message}><Slider min={1} max={10} value={field.value} onChange={field.onChange} labels={['Muito ruim', 'Excelente']} emojis={SONO_EMOJIS} /></Field>
@@ -560,12 +750,11 @@ export function Wizard() {
             <button
               type="button"
               onClick={handlePrev}
-              disabled={currentStep === 0}
-              className="inline-flex items-center gap-2 rounded-[0.75rem] px-[1.5rem] py-[0.75rem] text-[0.95rem] font-semibold cursor-pointer border-none bg-transparent text-muted-foreground transition-all duration-200 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 rounded-[0.75rem] px-[1.5rem] py-[0.75rem] text-[0.95rem] font-semibold cursor-pointer border-none bg-transparent text-muted-foreground transition-all duration-200 hover:text-foreground"
             >
               ← Anterior
             </button>
-            {currentStep < STEPS.length - 1 ? (
+            {currentStep < steps.length - 1 ? (
               <button
                 type="button"
                 onClick={handleNext}

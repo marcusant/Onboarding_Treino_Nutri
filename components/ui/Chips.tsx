@@ -16,7 +16,7 @@ const colorMap = {
   primary: 'bg-primary',
   red: 'bg-destructive',
   orange: 'bg-[#d97706]',
-  green: 'bg-success',
+  green: 'bg-[#34c77b]',
 };
 
 export function Chips({ options, value, onChange, color = 'primary', className, error }: ChipsProps) {

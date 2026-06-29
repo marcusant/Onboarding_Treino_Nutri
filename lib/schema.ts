@@ -1,12 +1,32 @@
 import { z } from 'zod';
 
+// Trilhas de onboarding. A escolha inicial define que passos aparecem
+// e que campos são obrigatórios (ver superRefine no fim do schema).
+export const TRACKS = ["treino", "nutricao", "ambos"] as const;
+export type Track = (typeof TRACKS)[number];
+
+export const hasTreino = (t?: string | null): boolean => t === "treino" || t === "ambos";
+export const hasNutricao = (t?: string | null): boolean => t === "nutricao" || t === "ambos";
+
 export const anamneseSchema = z.object({
+  // Passo 0: Trilha (escolha inicial)
+  track: z.enum(TRACKS, { message: "Selecione uma opção para começar" }),
+
   // Passo 1: Contato
   nome_completo: z.string().min(2, "Nome completo é obrigatório"),
   email: z.string().email("E-mail inválido"),
   codigo_pais: z.string().default("+351"),
   whatsapp: z.string().min(6, "Número de WhatsApp é obrigatório"),
-  data_nascimento: z.string().min(1, "Data de nascimento é obrigatória"),
+  data_nascimento: z.string().min(1, "Data de nascimento é obrigatória").refine((val) => {
+    if (!val) return false;
+    const birth = new Date(val);
+    if (Number.isNaN(birth.getTime())) return false;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age >= 18 && age <= 120;
+  }, "É necessário ter pelo menos 18 anos"),
   genero: z.enum(["Masculino", "Feminino"]),
   nacionalidade: z.string().min(1, "Seleciona um país"),
   pais_residencia: z.string().min(2, "País de residência é obrigatório").optional().nullable(),
@@ -28,24 +48,43 @@ export const anamneseSchema = z.object({
   ),
 
   // Passo 4: Saúde
-  lesoes_anteriores: z.array(z.string()).min(1, "Seleciona pelo menos uma opção"),
+  // condicoes_medicas é relevante para todas as trilhas (sempre obrigatório).
+  // lesões e liberação médica são específicos de treino → exigidos no superRefine.
+  lesoes_anteriores: z.array(z.string()).optional().default([]),
   condicoes_medicas: z.array(z.string()).min(1, "Seleciona pelo menos uma opção"),
-  liberacao_medica: z.enum(["Sim", "Não", "Não preciso"], { message: "Seleciona uma opção" }),
+  liberacao_medica: z.enum(["Sim", "Não", "Não preciso"]).optional().nullable(),
   dor_movimento: z.string().optional().nullable(),
   gestante: z.enum(["Sim", "Não", "Não se aplica"]).optional().nullable(),
 
-  // Passo 5: Treino
+  // Passo 5: Treino (só nas trilhas com treino → exigidos no superRefine)
   nivel: z.enum(["Iniciante", "Intermediário", "Avançado"]).optional().nullable(),
-  ja_treina: z.enum(["Começando do zero", "Já treino"]),
+  ja_treina: z.enum(["Começando do zero", "Já treino"]).optional().nullable(),
   tempo_treino: z.string().optional().nullable(),
   tipos_treino: z.array(z.string()).optional().default([]),
-  local_treino: z.enum(["Ginásio", "Casa", "Ar livre", "Misto: Ginásio e ar livre", "Misto: Casa e ar livre", "Misto: Ginásio e casa"]),
-  frequencia_semanal: z.enum(["2", "3", "4", "5", "6"]),
+  local_treino: z.enum(["Ginásio", "Casa", "Ar livre", "Misto: Ginásio e ar livre", "Misto: Casa e ar livre", "Misto: Ginásio e casa"]).optional().nullable(),
+  frequencia_semanal: z.enum(["2", "3", "4", "5", "6"]).optional().nullable(),
   tempo_sessao: z.enum(["30 min", "45 min", "60 min", "+60 min"]).optional().nullable(),
   horario_treino: z.enum(["Manhã", "Tarde", "Noite", "Varia"]).optional().nullable(),
   equipamentos: z.string().optional().nullable(),
 
-  // Passo 6: Compromisso
+  // Passo 6: Saúde nutricional (só nas trilhas com nutrição — campos sensíveis = opcionais)
+  medicamentos: z.string().optional().nullable(),
+  cirurgia_relevante: z.string().optional().nullable(),
+  exames_recentes: z.array(z.string()).optional().default([]),
+  compulsao_alimentar: z.enum(["Nunca", "Às vezes", "Frequentemente", "Prefiro não dizer"]).optional().nullable(),
+
+  // Passo 7: Hábitos alimentares (só nas trilhas com nutrição → obrigatórios no superRefine)
+  alimentacao_dia_normal: z.string().optional().nullable(),
+  refeicoes_por_dia: z.enum(["1-2", "3", "4", "5+"]).optional().nullable(),
+  horarios_fome: z.array(z.string()).optional().default([]),
+  agua_por_dia: z.enum(["< 1L", "1-2L", "2-3L", "> 3L"]).optional().nullable(),
+  alimentos_gosta: z.string().optional().nullable(),
+  alimentos_evita: z.string().optional().nullable(),
+  restricoes_alimentares: z.array(z.string()).optional().default([]),
+  maior_dificuldade: z.array(z.string()).optional().default([]),
+  resultado_90_dias: z.string().optional().nullable(),
+
+  // Passo final: Estilo de vida / Compromisso
   qualidade_sono: z.number().min(1).max(10).default(6),
   nivel_stress: z.number().min(1).max(10).default(5),
   alcool: z.enum(["Não", "Socialmente", "Frequentemente", "Prefiro não informar"]).optional().nullable(),
@@ -56,6 +95,47 @@ export const anamneseSchema = z.object({
   consentimento: z.literal(true, {
     message: "Obrigatório aceitar para continuar",
   }),
+}).superRefine((data, ctx) => {
+  // Campos obrigatórios apenas quando a trilha inclui TREINO.
+  if (hasTreino(data.track)) {
+    if (!(data.lesoes_anteriores && data.lesoes_anteriores.length > 0)) {
+      ctx.addIssue({ code: "custom", path: ["lesoes_anteriores"], message: "Seleciona pelo menos uma opção" });
+    }
+    if (!data.liberacao_medica) {
+      ctx.addIssue({ code: "custom", path: ["liberacao_medica"], message: "Seleciona uma opção" });
+    }
+    if (!data.ja_treina) {
+      ctx.addIssue({ code: "custom", path: ["ja_treina"], message: "Seleciona uma opção" });
+    }
+    if (!data.local_treino) {
+      ctx.addIssue({ code: "custom", path: ["local_treino"], message: "Seleciona uma opção" });
+    }
+    if (!data.frequencia_semanal) {
+      ctx.addIssue({ code: "custom", path: ["frequencia_semanal"], message: "Seleciona uma opção" });
+    }
+  }
+
+  // Campos obrigatórios apenas quando a trilha inclui NUTRIÇÃO.
+  if (hasNutricao(data.track)) {
+    if (!data.alimentacao_dia_normal || data.alimentacao_dia_normal.trim().length < 5) {
+      ctx.addIssue({ code: "custom", path: ["alimentacao_dia_normal"], message: "Descreve a tua alimentação num dia normal" });
+    }
+    if (!data.refeicoes_por_dia) {
+      ctx.addIssue({ code: "custom", path: ["refeicoes_por_dia"], message: "Seleciona uma opção" });
+    }
+    if (!data.agua_por_dia) {
+      ctx.addIssue({ code: "custom", path: ["agua_por_dia"], message: "Seleciona uma opção" });
+    }
+    if (!(data.restricoes_alimentares && data.restricoes_alimentares.length > 0)) {
+      ctx.addIssue({ code: "custom", path: ["restricoes_alimentares"], message: "Seleciona pelo menos uma opção" });
+    }
+    if (!(data.maior_dificuldade && data.maior_dificuldade.length > 0)) {
+      ctx.addIssue({ code: "custom", path: ["maior_dificuldade"], message: "Seleciona pelo menos uma opção" });
+    }
+    if (!data.resultado_90_dias || data.resultado_90_dias.trim().length < 3) {
+      ctx.addIssue({ code: "custom", path: ["resultado_90_dias"], message: "Indica o resultado que queres em 90 dias" });
+    }
+  }
 });
 
 export type AnamneseFormValues = z.infer<typeof anamneseSchema>;
