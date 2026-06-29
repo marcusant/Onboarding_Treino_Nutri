@@ -109,7 +109,7 @@ export function Select({
           className
         )}
       >
-        <span className={cn("truncate", !selectedOption && "text-muted-foreground")}>
+        <span className={cn("text-left leading-snug", !selectedOption && "text-muted-foreground")}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <span className="text-primary text-[0.7rem] ml-3 flex-shrink-0">▼</span>
@@ -140,16 +140,16 @@ export function Select({
                   onClick={() => selectOption(opt.value)}
                   onMouseMove={() => setHighlightedIndex(index)}
                   className={cn(
-                    "flex w-full items-center rounded-[0.6rem] px-3 py-2.5 text-left text-[0.95rem] cursor-pointer transition-colors duration-150 group",
+                    "flex w-full items-start rounded-[0.6rem] px-3 py-2.5 text-left text-[0.95rem] cursor-pointer transition-colors duration-150 group",
                     index === highlightedIndex && "bg-accent text-white",
                     value === opt.value && index !== highlightedIndex && "bg-[rgba(113,95,219,0.15)] text-white"
                   )}
                 >
-                  <span className={cn("flex-1 truncate transition-colors", index === highlightedIndex && "text-white")}>
+                  <span className={cn("flex-1 leading-snug transition-colors", index === highlightedIndex && "text-white")}>
                     {opt.label}
                   </span>
                   {value === opt.value && (
-                    <span className={cn("text-primary ml-2", index === highlightedIndex && "text-white")}>✓</span>
+                    <span className={cn("text-primary ml-2 flex-shrink-0", index === highlightedIndex && "text-white")}>✓</span>
                   )}
                 </button>
               ))
